@@ -2,27 +2,39 @@
 
 Magnetic golf-cart score puck — e-ink + 5 buttons, offline on-course, BLE sync after the round.
 
+## Repo
+
+**https://github.com/brianwhitet-ops/stat-puck**
+
+Full design pack zip: [v0.1.0 release](https://github.com/brianwhitet-ops/stat-puck/releases/tag/v0.1.0) (`stat-puck-full.zip`)
+
+## Concepts
+
+| On cart | In hand | Exploded | Mount |
+| --- | --- | --- | --- |
+| ![on cart](concepts/web/concept-on-cart.jpg) | ![in hand](concepts/web/concept-in-hand.jpg) | ![exploded](concepts/web/concept-exploded.jpg) | ![mount](concepts/web/mount-on-cart-bar.jpg) |
+
 ## Assembly animation
 
-![Assembly](docs/media/stat-puck-assembly.gif)
+![Assembly](docs/media/assembly-preview.gif)
 
-Video: [`docs/media/stat-puck-assembly-animation.mp4`](docs/media/stat-puck-assembly-animation.mp4)
+Full MP4 is in the [v0.1.0 release zip](https://github.com/brianwhitet-ops/stat-puck/releases/download/v0.1.0/stat-puck-full.zip).
 
 ## Deliverables
 
 | Path | What |
 | --- | --- |
-| `concepts/` | On-cart, in-hand, exploded, mount-on-bar concept images |
+| `concepts/web/` | On-cart, in-hand, exploded, mount-on-bar concept images |
 | `docs/SPEC.md` | One-page mechanical / electrical / firmware / cost spec |
 | `docs/FIRMWARE_PLAN.md` | MVP tasks + 7-day bench plan |
 | `docs/ORDER_MEMO.md` | What to order and why |
 | `docs/RISKS.md` | Rental plastic, e-ink lag, bounce, NEXT, double-post, GHIN gate |
 | `docs/SYNC_PAYLOAD.md` | Phone export schema (no invented GHIN API) |
 | `bom/BOM.md` | Annotated BOM with vendor links + first-prototype cart |
-| `cad/` | STEP + STL: enclosure, internals, steel plate, clamp, cart demo |
-| `animation/assembly_animation.mp4` | Labeled assembly animation |
-| `datasheets/` | Waveshare 2.9" e-Paper, Omron B3W, Raytac MDBT50Q |
-| `firmware/` | Skeleton notes / pin map for week-1 bring-up |
+| `cad/` | STEP + STL: enclosure, internals, steel plate, clamp |
+| `docs/media/assembly-preview.gif` | Labeled assembly preview |
+| `datasheets/` | Notes + linked vendor PDFs |
+| `firmware/PINMAP.md` | Week-1 bring-up pin map |
 
 ## Device (P1)
 
@@ -31,7 +43,7 @@ Video: [`docs/media/stat-puck-assembly-animation.mp4`](docs/media/stat-puck-asse
 - **Buttons:** 5× Omron B3W-1000 (IP67) — `+` `−` `PUTT` `MODE` `NEXT`
 - **Magnet:** K&J DC6TP-N52 rubber-coated N52, **13.12 lb** Case-1 pull
 - **Battery:** 500 mAh protected LiPo
-- **Mount:** magnet pocket + steel plate/3M for plastic carts + optional bar clamp
+- **Mount:** magnet pocket + steel plate/VHB for plastic carts + optional bar clamp
 
 ## UX (in-round)
 
