@@ -1,0 +1,13 @@
+item,vendor,url,qty,unit_usd,ext_usd,notes
+Seeed XIAO nRF52840,DigiKey,https://www.digikey.com/en/products/detail/seeed-technology-co-ltd/102010448/16652893,2,9.96,19.92,"USB-C BLE MCU; ~4820 in stock"
+Waveshare 2.9in e-Paper Module,Waveshare/Pi Hut,https://thepihut.com/products/eink-display-module-spi-2-9-296x128,1,15.99,15.99,"296x128 SPI; partial refresh"
+Omron B3W-1000,DigiKey,https://www.digikey.com/en/products/detail/omron-electronics-inc-emc-div/B3W-1000/3700,10,0.40,4.00,"IP67 sealed tactile"
+Adafruit LiPo 500mAh 1578,Adafruit,https://www.adafruit.com/product/1578,2,7.95,15.90,"Protected; ground ship only"
+K&J DC6TP-N52 magnet,K&J Magnetics,https://www.kjmagnetics.com/dc6tp-n52-neodymium-rubber-coated-disc-magnet,2,7.73,15.46,"13.12 lb Case-1 pull; rubber coat"
+Steel plate 70x40x1.2mm,McMaster/local,https://www.mcmaster.com/,2,3.00,6.00,"For plastic rental carts"
+3M VHB tape,McMaster,https://www.mcmaster.com/,1,4.00,4.00,"Bond plate to plastic"
+USB-C data cable,Adafruit/Amazon,https://www.adafruit.com/,1,5.00,5.00,"Flash + charge"
+Breadboard + jumpers,DigiKey,https://www.digikey.com/,1,8.00,8.00,"Week-1 wiring"
+M2 screws + inserts,McMaster,https://www.mcmaster.com/,1,6.00,6.00,"Hidden fasteners"
+Silicone gasket cord 1.5mm,McMaster,https://www.mcmaster.com/,1,4.00,4.00,"Split-line seal"
+PETG charcoal filament,local,n/a,1,25.00,25.00,"Shared spool; print enclosure"
