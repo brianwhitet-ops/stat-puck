@@ -15,7 +15,7 @@
   --sans: "Inter", "Helvetica Neue", "SF Pro Display", system-ui, sans-serif;
   --device: 390px;
   --gutter: 24px;
-  --nav-h: 72px;
+  --nav-h: 64px;
   --radius: 22px;
 }
 
@@ -82,16 +82,18 @@ ul {
 .device {
   width: 100%;
   max-width: var(--device);
+  height: 100dvh;
   min-height: 100dvh;
   background: var(--paper);
   position: relative;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .screen {
   flex: 1;
-  padding: 28px var(--gutter) calc(var(--nav-h) + 18px);
+  padding: 22px var(--gutter) 12px;
   overflow: auto;
 }
 
@@ -104,8 +106,8 @@ ul {
 }
 
 .page-title {
-  margin-top: 22px;
-  font-size: 42px;
+  margin-top: 18px;
+  font-size: 40px;
   font-weight: 700;
   letter-spacing: -0.045em;
   line-height: 0.95;
@@ -123,7 +125,7 @@ ul {
 .hairline {
   height: 1px;
   background: var(--rule);
-  margin: 22px 0 26px;
+  margin: 18px 0 20px;
   border: 0;
 }
 
@@ -137,7 +139,7 @@ ul {
 }
 
 .section {
-  margin-bottom: 28px;
+  margin-bottom: 20px;
 }
 
 .num {
@@ -147,10 +149,7 @@ ul {
 }
 
 .nav {
-  position: sticky;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  flex-shrink: 0;
   height: calc(var(--nav-h) + env(safe-area-inset-bottom));
   padding: 0 8px env(safe-area-inset-bottom);
   display: grid;
@@ -353,20 +352,21 @@ ul {
 .pills {
   display: flex;
   gap: 8px;
-  margin-bottom: 26px;
+  margin-bottom: 18px;
 }
 
 .pill {
   border: 1px solid #ece9e2;
   background: var(--card);
   border-radius: 999px;
-  padding: 9px 14px;
-  font-size: 11px;
+  padding: 8px 12px;
+  font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--ink);
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .pill[aria-pressed="true"] {
@@ -378,7 +378,7 @@ ul {
 .score-row {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  padding: 18px 8px 16px;
+  padding: 4px 0 2px;
 }
 
 .score-row div {
@@ -406,13 +406,18 @@ ul {
 .stat-tile {
   background: #ebe8e1;
   border-radius: 20px;
-  padding: 16px 16px 14px;
-  min-height: 118px;
+  padding: 14px 14px 12px;
+}
+
+.tile-name {
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
 }
 
 .stat-tile .num {
-  margin-top: 8px;
-  font-size: 32px;
+  margin-top: 6px;
+  font-size: 30px;
 }
 
 .stat-tile .unit {
@@ -433,7 +438,7 @@ ul {
   background: var(--graphite);
   color: #f4f1ea;
   border-radius: 22px;
-  padding: 18px 10px 16px;
+  padding: 16px 8px 14px;
   text-align: center;
 }
 
@@ -533,7 +538,7 @@ ul {
   gap: 10px;
   align-items: center;
   border-radius: 22px;
-  padding: 16px 18px;
+  padding: 14px 16px;
   background: var(--card);
   border: 1px solid #f0ede6;
 }
@@ -572,12 +577,12 @@ ul {
 
 .coach-btn {
   width: 100%;
-  margin-top: 18px;
+  margin-top: 14px;
   border: 0;
   background: var(--green);
   color: #f4f1ea;
   border-radius: 22px;
-  padding: 18px 16px;
+  padding: 16px 16px;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.12em;
@@ -587,14 +592,15 @@ ul {
 
 @media (min-width: 720px) {
   .stage {
-    padding: 36px 24px;
-    align-items: flex-start;
+    padding: 28px 24px;
+    align-items: center;
     background: #ebe8e1;
   }
 
   .device {
-    min-height: min(844px, calc(100dvh - 72px));
-    max-height: calc(100dvh - 72px);
+    height: 844px;
+    min-height: 844px;
+    max-height: 844px;
     border-radius: 36px;
     overflow: hidden;
     box-shadow: 0 22px 50px rgba(22, 22, 21, 0.1);

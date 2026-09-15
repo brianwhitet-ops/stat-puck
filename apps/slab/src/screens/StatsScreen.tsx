@@ -27,7 +27,7 @@ export function StatsScreen() {
         <h2 id="scoring" className="kicker">
           Scoring
         </h2>
-        <div className="card card-light score-row">
+        <div className="score-row">
           {stats.scoring.map((item) => (
             <div key={item.label}>
               <p className="mini-label">{item.label}</p>
@@ -44,25 +44,25 @@ export function StatsScreen() {
         <div className="stat-grid">
           <article className="stat-tile">
             <p className="mini-label">Captured</p>
-            <p>Fairways</p>
+            <p className="tile-name">Fairways</p>
             <p className="num">{stats.fairways.value}</p>
             <p className="miss">{stats.fairways.miss}</p>
           </article>
           <article className="stat-tile">
             <p className="mini-label">Derived</p>
-            <p>Greens in reg.</p>
+            <p className="tile-name">Greens in reg.</p>
             <p className="num">{stats.gir.value}</p>
           </article>
           <article className="stat-tile">
             <p className="mini-label">Captured</p>
-            <p>Putts</p>
+            <p className="tile-name">Putts</p>
             <p className="num">
               {stats.putts.value} <span className="unit">{stats.putts.unit}</span>
             </p>
           </article>
           <article className="stat-tile">
             <p className="mini-label">Derived</p>
-            <p>Up &amp; down</p>
+            <p className="tile-name">Up &amp; down</p>
             <p className="num">{stats.upAndDown.value}</p>
           </article>
         </div>
