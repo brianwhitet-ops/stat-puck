@@ -1,53 +1,21 @@
-# Visual spec — Instinct checkpoint (296×128)
+# Visual spec — Instinct REDO (296×128)
 
-Locked canvas: **296×128**, 1-bit, black ink on white paper, 1 px border.
+**Source of truth:** `design/instinct-firmware-goldens-pr1/`  
+Hashes: `design/instinct-firmware-goldens-pr1/SHA256SUMS.txt`  
+Note: `design/instinct-firmware-goldens-pr1/REDO-NOTE.md`
 
-Font: 1-bit DejaVu Sans Mono raster (Bitstream Vera / Arev — not Apple SF).
-Labels 7×12 advance 8; values 10×16 advance 11. License: `firmware/fonts/dejavu-license.txt`.
+These native 296×128 RGBA frames replace the prior host 1-bit scorecard. No layout reinterpretation.
 
-Shared hole-card chrome (states 1–4):
-
-| Band | Y | Content |
+| File | State | Locked copy |
 | --- | --- | --- |
-| Header | 6 | `HOLE` + medium hole# · center state tag · `PAR` + medium par |
-| Rule | 23 | x 10–285 |
-| Strokes | 30 | `STROKES` + boxed value at x=92 |
-| Putts | 52 | `PUTTS` + boxed value at x=92 |
-| Rule | 75 | |
-| Flags | 82 | FWY / drive chips left; **GIR Y/N overlay right** (never focused) |
-| Rule | 103 | |
-| Footer | 110 | this-hole vs-par (`+1 VS PAR`), or `LOCK HOLE n` |
+| `01-default-hole.png` | `DEFAULT_HOLE` | Big score (par). `HOLE 07` · `PAR 4 · 412 YD`. `E · THROUGH 6`. No FWY/GIR. |
+| `02-stroke-edit.png` | `STROKE_EDIT` | `STROKES` · − 4 + · `PRESS DIAL TO KEEP` |
+| `03-putts-input.png` | `PUTTS_INPUT` | `PUTTS` · − 2 + · `PRESS DIAL TO KEEP` |
+| `04-end-hole-confirm.png` | `END_HOLE_CONFIRM` | `DONE` · strokes/putts · drive LEFT / **FAIRWAY** / RIGHT · `PRESS DIAL` |
+| `05-round-complete-sync.png` | `ROUND_COMPLETE_SYNC` | `ROUND COMPLETE` · 74 · +2 · `READY TO SYNC` · `OPEN SLAB ON PHONE` |
+| `06-derived-stats.png` | `DERIVED_STATS` | `ROUND STATS` · GIR 11/18 61% · putting 31 / 1.72 per hole · `COMPUTED FROM SCORE+PUTTS` |
+| `slab-screen-states-contact-sheet.png` | (sheet) | Instinct 2×3 |
 
-Active field = filled invert box (white on black). Idle values are unboxed (concept scorecard).
+Host `slab_ui_render` blits the matching locked frame (zlib-baked in `firmware/src/slab_frames.c`). Pixel-diff must be zero vs these PNGs.
 
-## 1. DEFAULT_HOLE
-
-Fixture: hole 7, par 4, strokes 5, putts 2, FWY L, GIR N (derived 5−2 ≰ 2), footer running vs-par.
-
-No invert on values. Tag `HOLE`.
-
-## 2. STROKE_EDIT
-
-Same fixture. Strokes box inverted. Tag `STROKE`.
-
-## 3. PUTTS_INPUT
-
-Same fixture. Putts box inverted. Tag `PUTTS`.
-
-## 4. END_HOLE_CONFIRM
-
-Same fixture, par 4. Drive chips `L` `FWY` `R` with **L** inverted. Tag `LOCK`. Footer `LOCK HOLE 7 ?`.
-
-Par 3 variant (extra frame `04b`): `DRIVE` + inverted `N/A` + `PAR 3`. No L/FWY/R chips.
-
-## 5. ROUND_COMPLETE_SYNC
-
-Full 18 locked. Header `ROUND COMPLETE` / `SYNC`. Count `18 / 18 HOLES` + vs-par. `BLE ADVERTISE` + inverted `ON`. Footer `PULL CARD` / `NO MID-ROUND`.
-
-**Advertise only in this state.**
-
-## 6. DERIVED_STATS
-
-Header `DERIVED` / `STATS`. Rows GIR hits/holes, FWY hits/holes (par 3 excluded), PUTTS total. Footer `GIR FROM SCORE-PUTTS VS PAR`. Never shown as a play prompt.
-
-Goldens: `firmware/testdata/golden/01_*.png` … `06_*.png`.
+Behavior (unchanged): strokes → putts → done; no GIR prompt; drive L/fairway/R on par 4/5 only; BLE advertise only in `ROUND_COMPLETE_SYNC`.

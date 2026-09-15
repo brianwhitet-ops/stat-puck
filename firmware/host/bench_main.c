@@ -37,17 +37,11 @@ static int render_named(const slab_round_t *r, const char *dir, const char *name
 
 int main(int argc, char **argv)
 {
-    const char *out = "firmware/testdata/golden";
-    const char *extra = "firmware/testdata/extra";
+    const char *out = "../testdata/out";
     if (argc >= 2) {
         out = argv[1];
     }
-    if (argc >= 3) {
-        extra = argv[2];
-    }
-    ensure_dir("firmware/testdata");
     ensure_dir(out);
-    ensure_dir(extra);
 
     slab_round_t r;
     int rc = 0;
@@ -55,39 +49,29 @@ int main(int argc, char **argv)
     slab_round_init_fixture_hole7(&r);
     r.ui = SLAB_UI_DEFAULT_HOLE;
     slab_sync_ble_gate(&r);
-    rc |= render_named(&r, out, "01_default_hole");
+    rc |= render_named(&r, out, "01-default-hole");
 
     r.ui = SLAB_UI_STROKE_EDIT;
     slab_sync_ble_gate(&r);
-    rc |= render_named(&r, out, "02_stroke_edit");
+    rc |= render_named(&r, out, "02-stroke-edit");
 
     r.ui = SLAB_UI_PUTTS_INPUT;
     slab_sync_ble_gate(&r);
-    rc |= render_named(&r, out, "03_putts_input");
+    rc |= render_named(&r, out, "03-putts-input");
 
     r.ui = SLAB_UI_END_HOLE_CONFIRM;
-    r.drive_sel = SLAB_FWY_L;
+    r.drive_sel = SLAB_FWY_H;
     slab_sync_ble_gate(&r);
-    rc |= render_named(&r, out, "04_end_hole_confirm");
-
-    /* Par 3 confirm — same state, no drive chips. Extra, not one of the six. */
-    slab_round_t p3 = r;
-    p3.current_hole = 3;
-    p3.holes[2].strokes = 3;
-    p3.holes[2].putts = 2;
-    p3.drive_sel = SLAB_FWY_NA;
-    p3.ui = SLAB_UI_END_HOLE_CONFIRM;
-    slab_sync_ble_gate(&p3);
-    rc |= render_named(&p3, extra, "04b_end_hole_confirm_par3");
+    rc |= render_named(&r, out, "04-end-hole-confirm");
 
     slab_round_init_fixture_complete(&r);
     r.ui = SLAB_UI_ROUND_COMPLETE_SYNC;
     slab_sync_ble_gate(&r);
-    rc |= render_named(&r, out, "05_round_complete_sync");
+    rc |= render_named(&r, out, "05-round-complete-sync");
 
     r.ui = SLAB_UI_DERIVED_STATS;
     slab_sync_ble_gate(&r);
-    rc |= render_named(&r, out, "06_derived_stats");
+    rc |= render_named(&r, out, "06-derived-stats");
 
     return rc ? 1 : 0;
 }

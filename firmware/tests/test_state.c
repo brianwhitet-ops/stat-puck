@@ -150,9 +150,10 @@ static void test_render_size(void)
         slab_sync_ble_gate(&r);
         slab_ui_render(&fb, &r);
         EXPECT(SLAB_FB_W == 296 && SLAB_FB_H == 128, "canvas");
-        /* Border ink present. */
-        EXPECT(slab_fb_get(&fb, 0, 0) == 1, "border");
-        EXPECT(slab_fb_get(&fb, 295, 127) == 1, "border br");
+        /* Instinct paper fill ~ (222,223,217) in the interior. */
+        const uint8_t *p = &fb.rgba[(64 * SLAB_FB_W + 8) * 4];
+        EXPECT(p[0] > 200 && p[1] > 200 && p[2] > 200, "instinct paper");
+        EXPECT(p[3] == 255, "opaque interior");
     }
 }
 

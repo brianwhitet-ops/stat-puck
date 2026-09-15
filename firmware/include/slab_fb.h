@@ -11,6 +11,9 @@ extern "C" {
 
 typedef struct {
     uint8_t px[SLAB_FB_BYTES];
+#if SLAB_HOST
+    uint8_t rgba[SLAB_FB_W * SLAB_FB_H * 4];
+#endif
 } slab_fb_t;
 
 void slab_fb_clear(slab_fb_t *fb, int ink);

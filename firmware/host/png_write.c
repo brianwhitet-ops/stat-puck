@@ -43,7 +43,7 @@ int slab_write_png(const char *path, const slab_fb_t *fb)
 {
     const int w = SLAB_FB_W;
     const int h = SLAB_FB_H;
-    const int row_bytes = (w + 7) / 8;
+    const int row_bytes = w * 4;
     unsigned long raw_len = (unsigned long)(h * (1 + row_bytes));
     unsigned char *raw = (unsigned char *)malloc(raw_len);
     if (!raw) {
@@ -52,17 +52,7 @@ int slab_write_png(const char *path, const slab_fb_t *fb)
 
     for (int y = 0; y < h; y++) {
         raw[y * (1 + row_bytes)] = 0;
-        for (int xb = 0; xb < row_bytes; xb++) {
-            unsigned char packed = 0;
-            for (int b = 0; b < 8; b++) {
-                int x = xb * 8 + b;
-                int ink = (x < w) ? slab_fb_get(fb, x, y) : 0;
-                if (!ink) {
-                    packed |= (unsigned char)(0x80u >> b);
-                }
-            }
-            raw[y * (1 + row_bytes) + 1 + xb] = packed;
-        }
+        memcpy(raw + y * (1 + row_bytes) + 1, fb->rgba + y * row_bytes, (size_t)row_bytes);
     }
 
     uLongf csz = compressBound(raw_len);
@@ -96,8 +86,8 @@ int slab_write_png(const char *path, const slab_fb_t *fb)
     ihdr[5] = (unsigned char)((h >> 16) & 0xFF);
     ihdr[6] = (unsigned char)((h >> 8) & 0xFF);
     ihdr[7] = (unsigned char)(h & 0xFF);
-    ihdr[8] = 1;
-    ihdr[9] = 0;
+    ihdr[8] = 8;
+    ihdr[9] = 6; /* RGBA */
     ihdr[10] = 0;
     ihdr[11] = 0;
     ihdr[12] = 0;

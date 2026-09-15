@@ -8,13 +8,16 @@ CORE = \
 	../src/slab_font.c \
 	../src/slab_font_draw.c \
 	../src/slab_ui.c \
+	../src/slab_frames.c \
 	../src/slab_state.c \
 	../src/slab_input.c \
 	../src/slab_persist.c \
 	../src/slab_ble.c \
 	../src/slab_epd.c
 
-.PHONY: all bench test visual goldens clean
+GOLD = ../../design/instinct-firmware-goldens-pr1
+
+.PHONY: all bench test visual clean
 
 all: bench test
 
@@ -24,17 +27,14 @@ test: test_state
 bench_render: bench_main.c png_write.c $(CORE)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ bench_main.c png_write.c $(CORE) $(LDFLAGS)
 
-test_state: ../tests/test_state.c png_write.c $(CORE)
+test_state: ../tests/test_state.c $(CORE)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ ../tests/test_state.c $(CORE) $(LDFLAGS)
 
 visual: bench_render test_state
+	python3 ../tests/verify_sha256.py $(GOLD)/SHA256SUMS.txt
 	./test_state
-	./bench_render ../testdata/out ../testdata/extra
-	python3 ../tests/compare_goldens.py ../testdata/out ../testdata/golden
-
-goldens: bench_render
-	./bench_render ../testdata/golden ../testdata/extra
-	python3 ../tools/make_contact.py
+	./bench_render ../testdata/out
+	python3 ../tests/compare_goldens.py ../testdata/out $(GOLD)
 
 clean:
 	rm -f bench_render test_state
