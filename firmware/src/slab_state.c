@@ -239,9 +239,7 @@ static void clamp_strokes(slab_hole_t *h)
 
 static void clamp_putts(slab_hole_t *h)
 {
-    if ((int)h->putts < SLAB_PUTTS_MIN) {
-        h->putts = SLAB_PUTTS_MIN;
-    }
+    /* putts is uint8_t; SLAB_PUTTS_MIN is 0 — never compare unsigned < 0. */
     if (h->putts > SLAB_PUTTS_MAX) {
         h->putts = SLAB_PUTTS_MAX;
     }

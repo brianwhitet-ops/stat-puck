@@ -20,7 +20,9 @@ STATES = [
 
 def pixels(path: Path) -> tuple[int, int, list[tuple[int, int, int, int]]]:
     im = Image.open(path).convert("RGBA")
-    return im.size[0], im.size[1], list(im.getdata())  # noqa: PIL getdata
+    raw = im.tobytes()
+    pix = [tuple(raw[i : i + 4]) for i in range(0, len(raw), 4)]
+    return im.size[0], im.size[1], pix
 
 
 def main() -> int:

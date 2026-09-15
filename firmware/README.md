@@ -65,10 +65,19 @@ Re-bake C frame blobs after replacing goldens:
 python3 firmware/tools/bake_instinct_frames.py
 ```
 
-## Device bench
+## Device 1-bit panel path (non-host)
+
+`slab_ui_render` always fills the packed 296×128 1-bit buffer from
+`firmware/src/slab_frames_1bit.c` (Instinct goldens, luma-thresholded, no RGBA).
+
+PlatformIO (`xiaoble`) compiles `slab_frames_1bit.c` and **excludes**
+`slab_frames.c` (zlib RGBA, host/emulator only).
+
+The same non-host objects are built by `make -C firmware/host visual`
+as `test_device_1bit` (`-DSLAB_HOST=0`).
 
 ```bash
 pio run -e xiaoble -d firmware
 ```
 
-On-device 1-bit photos are out of scope for this checkpoint.
+On-device photos are a later gate.

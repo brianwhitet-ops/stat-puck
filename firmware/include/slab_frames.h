@@ -7,8 +7,13 @@
 extern "C" {
 #endif
 
-/* Decompress the Instinct-locked 296x128 RGBA frame for ui into rgba[296*128*4]. */
+#if SLAB_HOST
+/* Host/emulator only: decompressed Instinct RGBA (296*128*4). */
 int slab_frame_rgba(slab_ui_t ui, uint8_t *rgba);
+#endif
+
+/* Device + host: packed 1-bit panel buffer (SLAB_FB_BYTES), ink=1. */
+int slab_frame_1bit(slab_ui_t ui, uint8_t *packed);
 
 #ifdef __cplusplus
 }

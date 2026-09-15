@@ -41,6 +41,55 @@ static void test_sequence_lock(void)
     EXPECT(r.drive_sel != SLAB_FWY_NA, "drive armed on par 4");
 }
 
+static void enter_confirm(slab_round_t *r, int hole)
+{
+    r->current_hole = (uint8_t)hole;
+    r->ui = SLAB_UI_PUTTS_INPUT;
+    slab_apply_event(r, SLAB_EVT_NEXT);
+}
+
+static void test_drive_par4_par5(void)
+{
+    slab_round_t r;
+    slab_round_init(&r);
+
+    /* Hole 7 = par 4. */
+    EXPECT(r.holes[6].par == 4, "hole 7 par 4");
+    enter_confirm(&r, 7);
+    EXPECT(r.ui == SLAB_UI_END_HOLE_CONFIRM, "par4 confirm");
+    EXPECT(r.drive_sel == SLAB_FWY_H, "par4 drive starts fairway");
+    slab_apply_event(&r, SLAB_EVT_PLUS);
+    EXPECT(r.drive_sel == SLAB_FWY_R, "par4 + -> R");
+    slab_apply_event(&r, SLAB_EVT_PLUS);
+    EXPECT(r.drive_sel == SLAB_FWY_L, "par4 + -> L");
+    slab_apply_event(&r, SLAB_EVT_PLUS);
+    EXPECT(r.drive_sel == SLAB_FWY_H, "par4 + wrap fairway");
+    slab_apply_event(&r, SLAB_EVT_MINUS);
+    EXPECT(r.drive_sel == SLAB_FWY_L, "par4 - -> L");
+    slab_apply_event(&r, SLAB_EVT_MODE);
+    EXPECT(r.drive_sel == SLAB_FWY_H, "par4 MODE cycles drive");
+    slab_apply_event(&r, SLAB_EVT_NEXT);
+    EXPECT(r.holes[6].locked, "par4 locked");
+    EXPECT(r.holes[6].fairway == SLAB_FWY_H, "par4 stored fairway");
+    EXPECT(r.ui == SLAB_UI_DEFAULT_HOLE, "advance after par4");
+    EXPECT(!slab_ble_should_advertise(&r), "no BLE mid-round after par4");
+
+    /* Hole 4 = par 5. */
+    slab_round_init(&r);
+    EXPECT(r.holes[3].par == 5, "hole 4 par 5");
+    enter_confirm(&r, 4);
+    EXPECT(r.ui == SLAB_UI_END_HOLE_CONFIRM, "par5 confirm");
+    EXPECT(r.drive_sel != SLAB_FWY_NA, "par5 has drive selector");
+    slab_apply_event(&r, SLAB_EVT_MINUS);
+    EXPECT(r.drive_sel == SLAB_FWY_L, "par5 - -> L");
+    slab_apply_event(&r, SLAB_EVT_MINUS);
+    EXPECT(r.drive_sel == SLAB_FWY_R, "par5 - wrap R");
+    slab_apply_event(&r, SLAB_EVT_NEXT);
+    EXPECT(r.holes[3].locked, "par5 locked");
+    EXPECT(r.holes[3].fairway == SLAB_FWY_R, "par5 stored R");
+    EXPECT(r.ui == SLAB_UI_DEFAULT_HOLE, "advance after par5");
+}
+
 static void test_par3_no_drive(void)
 {
     slab_round_t r;
@@ -160,6 +209,7 @@ static void test_render_size(void)
 int main(void)
 {
     test_sequence_lock();
+    test_drive_par4_par5();
     test_par3_no_drive();
     test_gir_derived_only();
     test_ble_gate();
