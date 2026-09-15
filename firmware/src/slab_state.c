@@ -7,6 +7,21 @@ static const uint8_t kDefaultPars[SLAB_HOLES_MAX] = {
     4, 4, 3, 5, 4, 4, 3, 4, 5
 };
 
+/* Hole 7 is locked to the Instinct golden (412 YD). */
+static const uint16_t kYards[SLAB_HOLES_MAX] = {
+    394, 401, 168, 528, 387, 376,
+    412, 172, 541, 398, 405, 155,
+    533, 381, 390, 161, 408, 552
+};
+
+int slab_course_yards(int hole)
+{
+    if (hole < 1 || hole > SLAB_HOLES_MAX) {
+        return 0;
+    }
+    return (int)kYards[hole - 1];
+}
+
 static void fill_round_id(char *dst)
 {
     /* Deterministic local id — not a GHIN number. */
@@ -59,30 +74,33 @@ static void lock_played(slab_round_t *r, int last_inclusive, const uint8_t *stro
 
 void slab_round_init_fixture_hole7(slab_round_t *r)
 {
+    /* Values encoded in Instinct goldens 01–04: hole 7, strokes 4, putts 2,
+     * FAIRWAY, 412 yd, E through 6. */
     slab_round_init(r);
-    static const uint8_t st[] = {5, 4, 3, 5, 4, 6};
-    static const uint8_t pu[] = {2, 2, 2, 2, 1, 2};
-    static const uint8_t fw[] = {SLAB_FWY_L, SLAB_FWY_H, SLAB_FWY_NA,
-                                 SLAB_FWY_H, SLAB_FWY_R, SLAB_FWY_L};
+    static const uint8_t st[] = {4, 4, 3, 5, 4, 4};
+    static const uint8_t pu[] = {2, 2, 2, 2, 1, 1};
+    static const uint8_t fw[] = {SLAB_FWY_H, SLAB_FWY_H, SLAB_FWY_NA,
+                                 SLAB_FWY_H, SLAB_FWY_H, SLAB_FWY_H};
     lock_played(r, 6, st, pu, fw);
     r->current_hole = 7;
-    r->holes[6].strokes = 5;
+    r->holes[6].strokes = 4;
     r->holes[6].putts = 2;
-    r->holes[6].fairway = SLAB_FWY_L;
-    r->drive_sel = SLAB_FWY_L;
+    r->holes[6].fairway = SLAB_FWY_H;
+    r->drive_sel = SLAB_FWY_H;
     r->ui = SLAB_UI_DEFAULT_HOLE;
     slab_sync_ble_gate(r);
 }
 
 void slab_round_init_fixture_complete(slab_round_t *r)
 {
-    slab_round_init_fixture_hole7(r);
-    static const uint8_t st[] = {5, 4, 3, 5, 4, 6, 5, 3, 5, 4, 5, 3, 6, 4, 4, 3, 4, 5};
-    static const uint8_t pu[] = {2, 2, 2, 2, 1, 2, 2, 1, 2, 2, 2, 1, 2, 2, 2, 2, 2, 2};
+    /* Goldens 05–06: 74 / +2 / GIR 11/18 61% / 31 putts / 1.72 per hole. */
+    slab_round_init(r);
+    static const uint8_t st[] = {4, 4, 3, 5, 4, 4, 4, 4, 5, 4, 4, 3, 5, 4, 4, 3, 4, 6};
+    static const uint8_t pu[] = {2, 2, 2, 2, 1, 1, 2, 2, 2, 1, 1, 2, 2, 1, 2, 2, 2, 2};
     static const uint8_t fw[] = {
-        SLAB_FWY_L, SLAB_FWY_H, SLAB_FWY_NA, SLAB_FWY_H, SLAB_FWY_R, SLAB_FWY_L,
-        SLAB_FWY_L, SLAB_FWY_NA, SLAB_FWY_H, SLAB_FWY_H, SLAB_FWY_L, SLAB_FWY_NA,
-        SLAB_FWY_R, SLAB_FWY_H, SLAB_FWY_H, SLAB_FWY_NA, SLAB_FWY_H, SLAB_FWY_H
+        SLAB_FWY_H, SLAB_FWY_H, SLAB_FWY_NA, SLAB_FWY_H, SLAB_FWY_H, SLAB_FWY_H,
+        SLAB_FWY_H, SLAB_FWY_NA, SLAB_FWY_H, SLAB_FWY_H, SLAB_FWY_H, SLAB_FWY_NA,
+        SLAB_FWY_H, SLAB_FWY_H, SLAB_FWY_H, SLAB_FWY_NA, SLAB_FWY_H, SLAB_FWY_H
     };
     lock_played(r, 18, st, pu, fw);
     r->current_hole = 18;

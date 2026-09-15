@@ -16,6 +16,6 @@ These native 296×128 RGBA frames replace the prior host 1-bit scorecard. No lay
 | `06-derived-stats.png` | `DERIVED_STATS` | `ROUND STATS` · GIR 11/18 61% · putting 31 / 1.72 per hole · `COMPUTED FROM SCORE+PUTTS` |
 | `slab-screen-states-contact-sheet.png` | (sheet) | Instinct 2×3 |
 
-Host `slab_ui_render` blits the matching locked frame (zlib-baked in `firmware/src/slab_frames.c`). Pixel-diff must be zero vs these PNGs.
+Host `slab_ui_render` starts from the locked frame (zlib-baked in `firmware/src/slab_frames.c`) and composes live fields from `slab_round_t`. With the fixture/demo values these goldens encode, pixel-diff must be zero vs these PNGs. Other live values change those field pixels.
 
 Behavior (unchanged): strokes → putts → done; no GIR prompt; drive L/fairway/R on par 4/5 only; BLE advertise only in `ROUND_COMPLETE_SYNC`.

@@ -89,3 +89,27 @@ void slab_fb_invert_rect(slab_fb_t *fb, int x, int y, int w, int h)
         }
     }
 }
+
+#if SLAB_HOST
+void slab_fb_set_rgb(slab_fb_t *fb, int x, int y, uint8_t r, uint8_t g, uint8_t b)
+{
+    if (!in_bounds(x, y)) {
+        return;
+    }
+    uint8_t *p = &fb->rgba[(y * SLAB_FB_W + x) * 4];
+    p[0] = r;
+    p[1] = g;
+    p[2] = b;
+    p[3] = 255;
+}
+
+void slab_fb_fill_rgb(slab_fb_t *fb, int x, int y, int w, int h, uint8_t r, uint8_t g,
+                      uint8_t b)
+{
+    for (int yy = y; yy < y + h; yy++) {
+        for (int xx = x; xx < x + w; xx++) {
+            slab_fb_set_rgb(fb, xx, yy, r, g, b);
+        }
+    }
+}
+#endif

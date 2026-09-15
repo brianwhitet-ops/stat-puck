@@ -22,6 +22,7 @@ const uint8_t *slab_glyph_m(char c);
 
 int slab_text_s(slab_fb_t *fb, int x, int y, const char *s, int ink);
 int slab_text_m(slab_fb_t *fb, int x, int y, const char *s, int ink);
+int slab_text_m_scaled(slab_fb_t *fb, int x, int y, const char *s, int ink, int scale);
 int slab_text_s_width(const char *s);
 int slab_text_m_width(const char *s);
 

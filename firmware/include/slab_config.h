@@ -30,4 +30,13 @@
 
 #define SLAB_DEVICE_ID "SPK-0001"
 
+/* Instinct paper / ink (host RGBA patch). Luma < SLAB_INK_LUMA is ink. */
+#define SLAB_PAPER_R 222
+#define SLAB_PAPER_G 223
+#define SLAB_PAPER_B 217
+#define SLAB_INK_R 23
+#define SLAB_INK_G 24
+#define SLAB_INK_B 22
+#define SLAB_INK_LUMA 140
+
 #endif

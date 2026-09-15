@@ -21,6 +21,7 @@ int slab_round_gir_hits(const slab_round_t *r);
 int slab_round_gir_holes(const slab_round_t *r);
 int slab_round_fwy_hits(const slab_round_t *r);
 int slab_round_fwy_holes(const slab_round_t *r);
+int slab_course_yards(int hole); /* 1-based; hole 7 is 412 (golden) */
 
 void slab_sync_ble_gate(slab_round_t *r);
 

@@ -56,7 +56,7 @@ That command:
 
 1. Verifies `SHA256SUMS.txt` against the Instinct pack
 2. Runs state-machine tests
-3. Renders six host PNGs from the locked frames
+3. Renders six host PNGs from the dynamic composer (fixture/demo values)
 4. Pixel-diffs them against the six goldens (must be **0** differing pixels)
 
 Re-bake C frame blobs after replacing goldens:
@@ -67,8 +67,13 @@ python3 firmware/tools/bake_instinct_frames.py
 
 ## Device 1-bit panel path (non-host)
 
-`slab_ui_render` always fills the packed 296×128 1-bit buffer from
-`firmware/src/slab_frames_1bit.c` (Instinct goldens, luma-thresholded, no RGBA).
+`slab_ui_render` copies Instinct chrome for the UI state, then **composes**
+the packed 296×128 1-bit buffer from live round state (strokes, putts, hole,
+drive, totals, copy). It does not blit a fixed PNG keyed only by enum.
+
+When live fields equal the values those goldens encode, template pixels are
+left alone (reproduces the thresholded goldens). Any other value is stamped
+into the field box — `test_device_1bit` asserts those packed buffers differ.
 
 PlatformIO (`xiaoble`) compiles `slab_frames_1bit.c` and **excludes**
 `slab_frames.c` (zlib RGBA, host/emulator only).

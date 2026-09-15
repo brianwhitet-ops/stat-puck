@@ -31,9 +31,11 @@ bench_render: bench_main.c png_write.c $(CORE)
 test_state: ../tests/test_state.c $(CORE)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ ../tests/test_state.c $(CORE) $(LDFLAGS)
 
-# Non-host / device compile: no RGBA, no zlib, packed 1-bit frames only.
+# Non-host / device compile: no RGBA, no zlib. Packed 1-bit + live compose.
 DEVICE_CORE = \
 	../src/slab_fb.c \
+	../src/slab_font.c \
+	../src/slab_font_draw.c \
 	../src/slab_ui.c \
 	../src/slab_frames_1bit.c \
 	../src/slab_state.c \

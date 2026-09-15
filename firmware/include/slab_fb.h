@@ -25,6 +25,12 @@ void slab_fb_fill_rect(slab_fb_t *fb, int x, int y, int w, int h, int ink);
 void slab_fb_rect(slab_fb_t *fb, int x, int y, int w, int h, int ink);
 void slab_fb_invert_rect(slab_fb_t *fb, int x, int y, int w, int h);
 
+#if SLAB_HOST
+void slab_fb_set_rgb(slab_fb_t *fb, int x, int y, uint8_t r, uint8_t g, uint8_t b);
+void slab_fb_fill_rgb(slab_fb_t *fb, int x, int y, int w, int h, uint8_t r, uint8_t g,
+                      uint8_t b);
+#endif
+
 #ifdef __cplusplus
 }
 #endif
