@@ -35,6 +35,7 @@ Full MP4 is in the [v0.1.0 release zip](https://github.com/brianwhitet-ops/stat-
 | `docs/media/assembly-preview.gif` | Labeled assembly preview |
 | `datasheets/` | Notes + linked vendor PDFs |
 | `firmware/PINMAP.md` | Week-1 bring-up pin map |
+| `firmware/` | Slab UI/state checkpoint + 296×128 visual goldens (`firmware/README.md`) |
 
 ## Device (P1)
 
