@@ -1,4 +1,4 @@
-#if !defined(SLAB_HOST)
+#if !SLAB_HOST
 
 #include <Arduino.h>
 #include <SPI.h>
