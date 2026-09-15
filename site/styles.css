@@ -179,10 +179,20 @@ input {
   justify-self: end;
 }
 
+.hero,
+.section,
+.screen-story {
+  scroll-margin-top: 6.5rem;
+}
+
 .hero {
   width: min(var(--wide), calc(100% - var(--pad) * 2));
   margin: 0 auto;
-  padding: clamp(3.5rem, 8vw, 6.5rem) 0 var(--section);
+  padding: clamp(2.5rem, 6vw, 5rem) 0 clamp(4rem, 9vw, 7rem);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  gap: clamp(1.5rem, 4vw, 3.5rem);
+  align-items: center;
 }
 
 .eyebrow {
@@ -208,9 +218,9 @@ input {
 }
 
 .hero-title {
-  max-width: 18ch;
-  font-size: clamp(2.85rem, 8.4vw, 6.15rem);
-  margin-bottom: 1.6rem;
+  max-width: 16ch;
+  font-size: clamp(2.7rem, 5.2vw, 4.4rem);
+  margin-bottom: 1.35rem;
 }
 
 .hero-lead,
@@ -230,10 +240,14 @@ input {
 
 .hero-actions {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.85rem 1.25rem;
-  margin-bottom: clamp(2.5rem, 6vw, 4.5rem);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.hero-actions .btn {
+  width: max-content;
+  max-width: 100%;
 }
 
 .btn {
@@ -245,6 +259,7 @@ input {
   cursor: pointer;
   font-size: 0.9375rem;
   line-height: 1;
+  white-space: nowrap;
 }
 
 .btn-primary {
@@ -267,14 +282,12 @@ input {
 }
 
 .hero-plate {
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
+  margin: 0;
   background: var(--paper);
 }
 
 .hero-plate img {
-  width: min(92rem, 100%);
-  margin: 0 auto;
+  width: 100%;
 }
 
 .section {
@@ -480,14 +493,15 @@ input {
 }
 
 .waitlist-form {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 0.7rem;
   margin: 1.75rem 0 0.9rem;
 }
 
 .waitlist-form input {
-  flex: 1 1 16rem;
+  width: 100%;
+  min-width: 0;
   border: 1px solid var(--rule-strong);
   background: var(--paper-ink);
   color: var(--ink);
@@ -596,6 +610,11 @@ body.modal-open {
     display: none;
   }
 
+  .hero {
+    grid-template-columns: 1fr;
+    padding-top: 2.25rem;
+  }
+
   .problem-grid,
   .control-row,
   .studio-grid,
@@ -619,6 +638,13 @@ body.modal-open {
 
   .hero-title {
     max-width: 11ch;
+    font-size: clamp(2.55rem, 11.5vw, 3.4rem);
+  }
+
+  .header-inner .text-cta {
+    max-width: 14rem;
+    text-align: right;
+    line-height: 1.35;
   }
 
   .section-head h2,
@@ -632,6 +658,7 @@ body.modal-open {
   }
 
   .btn,
+  .hero-actions .btn,
   .waitlist-form input {
     width: 100%;
     text-align: center;
