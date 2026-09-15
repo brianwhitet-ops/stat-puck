@@ -4,3 +4,10 @@ __pycache__/
 *.pyc
 .DS_Store
 *.blend1
+firmware/host/bench_render
+firmware/host/test_state
+firmware/host/test_device_1bit
+firmware/testdata/out/
+firmware/testdata/nvram.bin
+firmware/testdata/nvram_test.bin
+.pio/
