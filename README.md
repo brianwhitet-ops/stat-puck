@@ -24,6 +24,9 @@ Full MP4 is in the [v0.1.0 release zip](https://github.com/brianwhitet-ops/stat-
 
 | Path | What |
 | --- | --- |
+| `site/` | Slab product site for playslabgolf.com. Preview: `npm run preview`. Do not deploy until Brian yes. |
+| `design/concept-01/` | Locked Concept 01 hero plate |
+| `design/instinct-firmware-goldens-pr1/` | Approved six-screen firmware goldens |
 | `concepts/web/` | On-cart, in-hand, exploded, mount-on-bar concept images |
 | `docs/SPEC.md` | One-page mechanical / electrical / firmware / cost spec |
 | `docs/FIRMWARE_PLAN.md` | MVP tasks + 7-day bench plan |
