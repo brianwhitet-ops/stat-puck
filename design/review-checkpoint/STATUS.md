@@ -30,6 +30,17 @@
 
 No price, ship date, preorder, certified-weatherproof, or official GHIN claims. Waitlist remains interest-only: **Join the first-batch list.**
 
+## Waitlist screenshots
+
+| File | Viewport | State |
+| --- | --- | --- |
+| `design/review-checkpoint/desktop_waitlist_empty.png` | 1440 | Modal empty |
+| `design/review-checkpoint/desktop_waitlist_filled.png` | 1440 | Email entered |
+| `design/review-checkpoint/desktop_waitlist_success.png` | 1440 | Persisted success |
+| `design/review-checkpoint/mobile_waitlist_empty_390.png` | 390 | Modal empty |
+| `design/review-checkpoint/mobile_waitlist_filled_390.png` | 390 | Email entered |
+| `design/review-checkpoint/mobile_waitlist_success_390.png` | 390 | Persisted success |
+
 ## Preview (no deploy)
 
 ```bash
