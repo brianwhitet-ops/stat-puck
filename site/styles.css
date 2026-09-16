@@ -493,6 +493,7 @@ input {
 }
 
 .waitlist-form {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 0.7rem;
@@ -518,8 +519,29 @@ input {
   margin-bottom: 0.75rem;
 }
 
+.form-status.is-success {
+  color: var(--graphite);
+}
+
+.form-status.is-error {
+  color: #7a3b2e;
+}
+
 .form-status[hidden] {
   display: none;
+}
+
+.hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
 
 .micro {

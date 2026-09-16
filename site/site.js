@@ -3,14 +3,15 @@
   const openers = document.querySelectorAll("[data-open-waitlist]");
   const closers = document.querySelectorAll("[data-close-waitlist]");
   const forms = document.querySelectorAll(".waitlist-form");
-  const storageKey = "slab-first-batch-interest";
   let lastFocus = null;
 
-  const setStatus = (form, message) => {
+  const setStatus = (form, message, kind) => {
     const status = form.parentElement.querySelector("[data-form-status]");
     if (!status) return;
     status.hidden = false;
     status.textContent = message;
+    status.classList.remove("is-success", "is-error");
+    if (kind) status.classList.add(kind);
   };
 
   const getFocusable = () =>
@@ -62,29 +63,56 @@
   });
 
   forms.forEach((form) => {
-    form.addEventListener("submit", (event) => {
+    form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const input = form.querySelector('input[type="email"]');
+      const button = form.querySelector('button[type="submit"]');
+      const honeypot = form.querySelector('input[name="_gotcha"]');
       const email = (input?.value || "").trim().toLowerCase();
+
       if (!input?.checkValidity()) {
         input?.reportValidity();
+        setStatus(form, "Enter a valid email.", "is-error");
         return;
       }
 
-      try {
-        const existing = JSON.parse(localStorage.getItem(storageKey) || "[]");
-        const next = Array.isArray(existing) ? existing : [];
-        if (!next.includes(email)) next.push(email);
-        localStorage.setItem(storageKey, JSON.stringify(next));
-      } catch {
-        // Review build: still confirm even if storage is blocked.
+      const previous = button?.textContent;
+      if (button) {
+        button.disabled = true;
+        button.textContent = "Sending…";
       }
 
-      if (input) input.value = "";
-      setStatus(
-        form,
-        "You’re on the interest list on this device. We’ll write when a first batch is real."
-      );
+      try {
+        const response = await fetch("/api/waitlist", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({
+            email,
+            _gotcha: honeypot?.value || "",
+          }),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || "Could not save that email. Try again.");
+        }
+        if (input) input.value = "";
+        setStatus(
+          form,
+          "You’re on the first-batch list. We’ll write when a batch is real.",
+          "is-success"
+        );
+      } catch (error) {
+        setStatus(
+          form,
+          error instanceof Error ? error.message : "Could not save that email. Try again.",
+          "is-error"
+        );
+      } finally {
+        if (button) {
+          button.disabled = false;
+          button.textContent = previous || "Notify me";
+        }
+      }
     });
   });
 })();

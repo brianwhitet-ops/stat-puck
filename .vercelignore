@@ -1,0 +1,16 @@
+cad
+animation
+bom
+firmware
+datasheets
+docs
+concepts
+*.step
+*.stl
+*.pyc
+__pycache__
+.git
+design/review-checkpoint
+site/.data
+.env
+.env.local

@@ -8,7 +8,7 @@
       name="description"
       content="Slab is a cart-native golf scoring object. Keep your head in the shot. Review the round when it can actually teach you something. Concept in development."
     />
-    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://playslabgolf.com/" />
     <meta property="og:type" content="website" />
     <meta property="og:locale" content="en_US" />
@@ -332,13 +332,20 @@
               placeholder="you@course.com"
               required
             />
+            <input
+              class="hp"
+              type="text"
+              name="_gotcha"
+              tabindex="-1"
+              autocomplete="off"
+              aria-hidden="true"
+            />
             <button class="btn btn-primary" type="submit">Notify me</button>
           </form>
-          <p class="form-status" data-form-status hidden></p>
+          <p class="form-status" data-form-status hidden aria-live="polite"></p>
           <p class="micro">
-            Draft interest list. We will write once when a first batch is
-            real. This review build stores the address on this device
-            until a list is wired.
+            Interest only. No payment. We’ll write once when a first batch
+            is real.
           </p>
         </div>
       </section>
@@ -361,10 +368,7 @@
           weatherproof. Not an official GHIN product or partner. Third-party
           names belong to their owners; no affiliation is claimed.
         </p>
-        <p class="footer-meta">
-          Private visual-review checkpoint. Do not deploy publicly.
-          © 2026 Slab
-        </p>
+        <p class="footer-meta">© 2026 Slab · playslabgolf.com</p>
       </div>
     </footer>
 
@@ -395,12 +399,20 @@
             placeholder="you@course.com"
             required
           />
+          <input
+            class="hp"
+            type="text"
+            name="_gotcha"
+            tabindex="-1"
+            autocomplete="off"
+            aria-hidden="true"
+          />
           <button class="btn btn-primary" type="submit">Notify me</button>
         </form>
-        <p class="form-status" data-form-status hidden></p>
+        <p class="form-status" data-form-status hidden aria-live="polite"></p>
         <p class="micro">
-          Interest only. This review build keeps the address on this
-          device until a list is wired.
+          Interest only. No payment. We’ll write once when a first batch
+          is real.
         </p>
       </div>
     </div>
