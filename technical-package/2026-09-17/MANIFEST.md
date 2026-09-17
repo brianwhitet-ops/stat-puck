@@ -7,10 +7,21 @@
 **First checkpoint (skeleton + cover):** `bc0c64d02ad60da5a0f7e064ba86e616a12139c3`  
 **Fill commit (complete docs):** `d88e7a3e1d551c42cc5706875de540de6f04e99b`  
 **Reviewed lock (Instinct file-by-file):** `03dd4047d4915095430c125e703db08d5fa5361e`  
-**Instinct correction (all four items):** `56aa033e4d184133fd6fbc700535eb44af615c6e`  
-**This manifest lock:** `56aa033e4d184133fd6fbc700535eb44af615c6e`  
+**Package content SHA:** `56aa033e4d184133fd6fbc700535eb44af615c6e`  
 **Firmware (PR #1, not merged):** `e7f7ad79c885627616819ad08114a704024569f7`  
 **App contract (PR #3, not merged):** `57609af3f7e23819a89e01e5a803a8f36a80f5b8`
+
+## SHA scheme (non-self-referential)
+
+A git commit cannot contain its own hash. This file therefore does **not** use a field named “This manifest lock.”
+
+| Name | Meaning | Verify |
+| --- | --- | --- |
+| **Package content SHA** | Last commit that changed any file under `technical-package/2026-09-17/` **except** this lock document. Today that is the Instinct four-item correction. | `git log -1 --format=%H -- technical-package/2026-09-17 ':!technical-package/2026-09-17/MANIFEST.md'` |
+| **Lock document** | This file at branch HEAD. That SHA is **not written below**. | `git rev-parse HEAD` must equal `git log -1 --format=%H -- technical-package/2026-09-17/MANIFEST.md` |
+| **Package-document row SHA** | Last commit that changed **that path**. | `git log -1 --format=%H -- <path>` |
+
+Do not treat Package content SHA as the commit that contains the current `MANIFEST.md`.
 
 Paths are repo-relative.
 
@@ -19,7 +30,7 @@ Paths are repo-relative.
 | File | Repo path | Commit SHA | Notes |
 | --- | --- | --- | --- |
 | Cover | `technical-package/2026-09-17/COVER.md` | `56aa033e4d184133fd6fbc700535eb44af615c6e` | Internal; not for Peakingtech yet; ENT-01 firmware-conflict blocker |
-| This manifest | `technical-package/2026-09-17/MANIFEST.md` | `03dd4047d4915095430c125e703db08d5fa5361e` | Prior reviewed lock SHA (concrete, not a self-referential placeholder). Correction content: `56aa033e4d184133fd6fbc700535eb44af615c6e`. |
+| This manifest | `technical-package/2026-09-17/MANIFEST.md` | HEAD (not stored; see SHA scheme) | Lock document. Content this map describes: `56aa033e4d184133fd6fbc700535eb44af615c6e`. |
 | PRD + open requirements | `technical-package/2026-09-17/PRD.md` | `56aa033e4d184133fd6fbc700535eb44af615c6e` | Zero-start hole entry (ENT-01) |
 | Target values | `technical-package/2026-09-17/TARGET-VALUES-FOR-OWNER-REVIEW.md` | `56aa033e4d184133fd6fbc700535eb44af615c6e` | Owner-approved vs proposed; ENT-01 |
 | Architecture | `technical-package/2026-09-17/ARCHITECTURE.md` | `56aa033e4d184133fd6fbc700535eb44af615c6e` | Zero-start + BOM status wording |
