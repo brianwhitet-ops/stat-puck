@@ -1,0 +1,2 @@
+subsystem,description,manufacturer,mpn,vendor,qty,phase,status,alternate,unit_cost_basis_date,lead_time_lifecycle,open_decision
+# Engineering BOM filling after first checkpoint. TBD lines required for PCB, charge/protection, storage, connectors, fasteners, gasket, enclosure, clamp.
