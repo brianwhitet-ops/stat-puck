@@ -3,6 +3,8 @@
 **Audience:** Brian + Instinct (internal). **Not for Peakingtech yet.**  
 **Revision date:** 2026-09-17  
 **Branch:** `cursor/peakingtech-tech-package-0917`  
+**PR:** https://github.com/brianwhitet-ops/stat-puck/pull/4  
+**First checkpoint:** `bc0c64d02ad60da5a0f7e064ba86e616a12139c3`  
 **Package path:** `technical-package/2026-09-17/`  
 **Manifest:** `technical-package/2026-09-17/MANIFEST.md`
 
