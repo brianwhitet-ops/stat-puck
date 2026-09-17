@@ -27,6 +27,7 @@ Do not treat anything in this package as a claim of:
 - a steel plate in the box (mount is **direct magnet + removable clamp**)
 - an unvalidated `<$40 @ 100` / `<$15 @ 5k` cost promise
 - implemented OTA or BLE DFU (PR #1 and PR #3: **NOT IMPLEMENTED**)
+- captured strokes / putts / fairway-hit from a new hole that the golfer has not entered (owner-approved zero-start; current firmware still prefills — conflict)
 
 Stale `main` docs (`docs/SPEC.md`, `docs/RISKS.md`, `docs/FIRMWARE_PLAN.md`, `README.md`, `cad/README.md`) still mention steel plate, IP67-ish sealing, MODE-to-GIR, and cost targets. **This package supersedes those claims** for review. Do not send `main` as-is to Peakingtech.
 
@@ -85,7 +86,7 @@ Please advise: Nordic Secure DFU / MCUboot vs another proven signed path; dual-b
 | File | Role |
 | --- | --- |
 | `MANIFEST.md` | Every package file + cited source → repo path + commit SHA |
-| `PRD.md` | Product boundary, flows, targets, puck/app contract, non-goals, open-requirements table |
+| `PRD.md` | Product boundary, zero-start in-round flow, targets, puck/app contract, non-goals, open-requirements table |
 | `TARGET-VALUES-FOR-OWNER-REVIEW.md` | Owner-approved vs proposed values; blank owner-decision column |
 | `ARCHITECTURE.md` | Block diagram + interface table; P1 vs production |
 | `MECHANICAL.md` | Dimensioned brief; STEP/STL honesty and CAD blocker |
@@ -103,6 +104,7 @@ Please advise: Nordic Secure DFU / MCUboot vs another proven signed path; dual-b
 3. **No real-panel, measured-power, BLE range, drop, ingress, temperature, power-loss, or DFU evidence.**
 4. **Instinct draft PRD / architecture / firmware-matrix / BOM files** mentioned on PR #2 were not in this checkout or Google Drive search; this package is rebuilt from owner comments + repo/PR sources. If Brian has those drafts, they should be diffed against this folder.
 5. **Puck/app payload schemas disagree** (`docs/SYNC_PAYLOAD.md` + PR #1 builder vs PR #3 `schema_version: 1` contract). Documented in `PRD.md` / `PUCK-APP-CONTRACT-NOTES.md`. Not silently merged.
+6. **Hole-entry firmware conflict.** Owner-approved ENT-01: every hole starts at zero; no par / two-putt / fairway-hit prefill. PR #1 `slab_hole_apply_defaults` still prefills those values. Documented; firmware has not changed. STAT-01 / STAT-02 fail against the current tree.
 
 ## Distribution
 

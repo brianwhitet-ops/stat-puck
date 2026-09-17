@@ -31,10 +31,12 @@ Peakingtech may advise; they do not choose or spend.
 | Envelope — face | **Proposed:** 110 × 58 mm (current CAD) | Matches the concept slab and 2.9" landscape module. | **Proposed** | |
 | Envelope — thickness | **Proposed:** ≤18 mm (CAD concept is 15.5 mm) | Leaves a few mm if IP55 / drop / cell force growth; **do not shrink BAT/DRP/IP to protect 15.5**. | **Proposed** | |
 | Envelope — mass | **Proposed:** ≤150 g (older spec “~95–120 g” is an **unweighed estimate** — discarded as a claim) | Pocketable / cart-safe; no scale data. | **Proposed** | |
-| Button durability | **Proposed:** wet-glove usable; life = selected switch rating after cap/DFM (Omron B3W-1000 catalog: sealed switch, OF 1.57 N — **product life untested**) | Five large pads beat a touchscreen in rain; do not invent a cycle number beyond the switch datasheet. | **Proposed** | |
+| Button durability | **Proposed:** wet-glove usable; life = P1 switch rating after cap/DFM (Omron B3W-1000 catalog: sealed switch, OF 1.57 N — **product life untested**). B3W is a P1 selection and production candidate pending DFM, wet/glove, and IP55 — **not** an approved production switch. | Five large pads beat a touchscreen in rain; do not invent a cycle number beyond the switch datasheet. | **Proposed** | |
 | Unsynced retention | **Proposed:** ≥10 completed rounds **and** ≥30 days without import | Covers a trip plus a forgotten Sunday sync. | **Proposed** | |
 | Launch compliance design-in | **Proposed:** US + EU (FCC + CE/RED). **Not certified. No pre-scan.** | Matches intended first markets; UKCA/RoHS/UN38.3 are follow-ons, not claims. | **Proposed** | |
 | Charge time | **TBD** — no measured charge current or selected charger IC for production | XIAO BQ25101 exists on P1; hours must not be invented. | **TBD** | |
+| Hole entry — starting values | Every hole starts at **0** strokes / **0** putts / **unset** drive. No par, two-putt, or fairway-hit prefill. Course par is metadata only and must not create captured strokes, putts, or drive results. | Owner: full manual entry so every recorded performance value is entered through Slab. Brian: “No I want it to be 0, this forces people to use the slab.” | **Owner-approved** | |
+| Hole entry — untouched advance | Advancing or finishing must **not** turn untouched defaults into FIR / GIR / putt facts. Displayed zeros are not captured until the golfer enters them. | Prevents silent false fairway / GIR / two-putt stats if the golfer NEXT/locks without editing. | **Owner-approved** | |
 
 ## Illustrative nameplate math (not a cell selection)
 
@@ -72,3 +74,4 @@ Charge time, UN38.3 pack docs, and production-cell sourceability: **TBD** (Peaki
 - If measured I_active is high, **grow the cell or cut refresh energy** — do not redefine “active” as sleep.
 - If IP55 + 1.8 m drop + magnet pocket need more than 18 mm or 150 g, **flag the envelope**, do not quietly drop IP/drop/battery.
 - 500 mAh must not be kept “because the concept used it.”
+- PR #1 still prefills `strokes = par`, `putts = 2`, `fairway = SLAB_FWY_H`. That is an **implementation conflict** with the owner-approved zero-start rows, not a product waiver. Do not treat host goldens that bake those defaults as captured-stat evidence.

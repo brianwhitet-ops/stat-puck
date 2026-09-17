@@ -19,6 +19,7 @@ This matrix is grounded in that tree. **Host renders and `pio run` success are n
 | Provisioning / unique device ID | `SLAB_DEVICE_ID` is the literal `"SPK-0001"`. |
 | OTA / BLE DFU works because nRF52840 can | **NOT IMPLEMENTED** on PR #1. See `BLE-DFU.md`. |
 | PR #3 implements DFU | **NOT IMPLEMENTED.** Visual shell + contract helpers only. |
+| Hole defaults are the locked product rule | **CONFLICT.** Owner-approved rule is zero-start / full manual entry. Code still prefills. See below. |
 
 ## Status key
 
@@ -32,6 +33,28 @@ This matrix is grounded in that tree. **Host renders and `pio run` success are n
 
 `H`/`X` never upgrade a row to `P`.
 
+## Implementation conflict — hole defaults vs owner-approved zero-start
+
+**Owner-approved product rule (2026-09-17):** every hole starts at zero. No par / two-putt / fairway-hit prefill. Course par may exist as metadata. Strokes, putts, and drive become recorded only through Slab input. Advancing or finishing must not turn untouched values into FIR / GIR / putt facts.
+
+**What PR #1 actually does** (`slab_hole_apply_defaults` at `e7f7ad79c885627616819ad08114a704024569f7`):
+
+```
+h->strokes = h->par;
+h->putts = 2;
+h->fairway = (h->par == 3) ? SLAB_FWY_NA : SLAB_FWY_H;
+h->locked = 0;
+```
+
+`slab_round_init` also sets `drive_sel = SLAB_FWY_H`. If the golfer NEXT/locks without editing:
+
+- FIR on par 4/5 records a fairway hit (`SLAB_FWY_H`)
+- GIR is `(par − 2) ≤ (par − 2)` → **true**
+- Putts record as **2**
+- Strokes record as **par**
+
+That is **implementation truth**. It **conflicts** with ENT-01 until firmware changes. Host goldens/fixtures that bake par / 2 / fairway are not a product waiver. STAT-01 in `VALIDATION-MATRIX.md` must fail against this tree.
+
 ## Matrix
 
 | Item | I | H | X | P | N | Notes |
@@ -40,8 +63,11 @@ This matrix is grounded in that tree. **Host renders and `pio run` success are n
 | Instinct 296×128 chrome + live field compose | Y | Y | Y* | — | | `slab_ui_render` stamps strokes/putts/hole/drive/totals; goldens 0-diff at fixture values |
 | Device packed 1-bit buffer changes with live fields | Y | Y | Y* | — | | `test_device_1bit` (`SLAB_HOST=0`) |
 | Sequential lock strokes → putts → done | Y | Y | Y* | — | | `test_state.c` |
-| No GIR prompt; GIR derived | Y | Y | Y* | — | | `slab_hole_gir` |
-| Drive L/fairway/R on par 4/5 only | Y | Y | Y* | — | | PUTT ignored |
+| Hole create defaults par / 2 / fairway (`slab_hole_apply_defaults`) | Y | Y | Y* | — | | **CONFLICTS** with owner-approved zero-start (ENT-01). Keep as implementation truth until firmware changes. |
+| Zero-start hole create (strokes=0, putts=0, drive unset) | — | — | — | — | **N** | Required product. Not in this tree. |
+| Refuse to promote untouched defaults into FIR/GIR/putt facts | — | — | — | — | **N** | Required product. Current lock path will serialize the prefills. |
+| No GIR prompt; GIR derived | Y | Y | Y* | — | | `slab_hole_gir` — derives from whatever strokes/putts are stored, including prefills |
+| Drive L/fairway/R on par 4/5 only | Y | Y | Y* | — | | PUTT ignored. Default is already `SLAB_FWY_H`. |
 | BLE advertise **gate** (legal only in `ROUND_COMPLETE_SYNC`) | Y | Y | Y* | — | | `slab_ble_should_advertise` |
 | Bluefruit / SoftDevice advertising | — | — | — | — | **N** | `main.cpp` Serial print stub |
 | GATT CourseCard / RoundData / SyncControl / DeviceInfo | — | — | — | — | **N** | Named in stale `docs/PHONE_APP.md` only |

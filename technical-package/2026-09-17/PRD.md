@@ -24,29 +24,37 @@ Website (`playslabgolf.com`) and the PR #3 visual app are **not** hardware proof
 ## 2. Users and jobs
 
 - **On the first tee:** start a 9 or 18 hole round in seconds. Course preload is helpful metadata, not an entry ticket. **Intended inactive / start / course-card boot is NOT implemented** (firmware still boots `LOCAL EXAMPLE`).
-- **During play:** glance hole / par / score; edit strokes then putts then confirm; phone stays away. BLE off.
+- **During play:** glance hole / par (course metadata) / score; enter strokes then putts then drive on the Slab; phone stays away. BLE off. Every performance number is golfer-entered.
 - **Walking off 18:** save on Slab first. Sync is optional and later.
 - **Later (parking lot / days later):** open the app, import queued rounds oldest-first, review, optional humble coaching inside captured evidence.
 
 ## 3. In-round flow (locked interaction)
 
-Sequential lock (PR #1 `slab_apply_event`): **strokes → putts → done**. No GIR prompt. PUTT pad is wired and **ignored** (cannot skip to putts).
+**Owner-approved hole entry (2026-09-17):** every hole starts at **zero**. No par / two-putt / fairway-hit prefill. Brian chose full manual entry so every recorded performance value is entered through Slab rather than silently inferred from defaults. His reason: this forces people to use the Slab.
+
+Course **par** may arrive as course-card metadata. It must not create captured strokes, putts, or drive results.
+
+Sequential lock (PR #1 `slab_apply_event` order): **strokes → putts → done**. No GIR prompt. PUTT pad is wired and **ignored** (cannot skip to putts).
 
 ```
-DEFAULT_HOLE
-  NEXT → STROKE_EDIT     (+/− change strokes; min 1)
-  NEXT → PUTTS_INPUT     (+/− change putts)
+DEFAULT_HOLE          (strokes=0, putts=0, drive unset/zero;
+                       par may be shown as course metadata only;
+                       no recorded FIR / GIR / putt / stroke facts yet)
+  NEXT → STROKE_EDIT     (+/− enter strokes; captured only after golfer input)
+  NEXT → PUTTS_INPUT     (+/− enter putts; captured only after golfer input)
   NEXT → END_HOLE_CONFIRM
-           par 3: drive N/A
-           par 4/5: cycle drive L / fairway / R
+           par 3: drive N/A (metadata; not a golfer-entered miss)
+           par 4/5: cycle drive L / fairway / R — recorded only if the golfer sets it
            NEXT locks hole and advances
            after last hole → ROUND_COMPLETE_SYNC (BLE advertise legal)
-           MODE from sync → DERIVED_STATS (GIR / putts computed)
+           MODE from sync → DERIVED_STATS (GIR / putts computed from captured values only)
 ```
 
-Defaults when a hole is created: strokes = par, putts = 2, fairway = fairway on par 4/5 else N/A.
+Advancing or finishing must not turn an untouched hole into FIR / GIR / putt facts. Displayed zeros are not captured performance until the golfer enters them on the Slab.
 
-**Not implemented (required product, missing firmware):** Quick Start vs course-card load, explicit 9/18 start, End-now-as-9 at the turn, “ROUND SAVED ON SLAB” before sync copy, multi-round queue, ACK-after-durable-write, DFU.
+**Current firmware conflict (implementation truth, not the product rule):** PR #1 `slab_hole_apply_defaults` at `e7f7ad79…` still sets `strokes = par`, `putts = 2`, `fairway = SLAB_FWY_H` on par 4/5. Keep that documented in `FIRMWARE-STATUS.md` until firmware changes. Do not treat it as the locked flow.
+
+**Not implemented (required product, missing firmware):** zero-start hole create (conflicts with current defaults), Quick Start vs course-card load, explicit 9/18 start, End-now-as-9 at the turn, “ROUND SAVED ON SLAB” before sync copy, multi-round queue, ACK-after-durable-write, DFU.
 
 ## 4. Puck / app contract (v0.1)
 
@@ -57,7 +65,8 @@ Authoritative notes: `PUCK-APP-CONTRACT-NOTES.md`. Sources: PR #3 `puck-app-roun
 - Advertise / transfer only after the golfer completes the round (`ROUND_COMPLETE_SYNC`). BLE off during play.
 - App-open import. ACK only after a validated durable write. Never delete on transmit alone.
 - Idempotent by `round_id`. Duplicates update sync metadata only.
-- GIR is derived; not a captured field the golfer enters.
+- GIR is derived from **captured** strokes and putts only; not a field the golfer enters. Do not derive GIR from untouched zeros or firmware prefills.
+- Strokes, putts, and drive result start unset/zero and become recorded only through device input. Do not serialize an untouched fairway hit or a fabricated putt/stroke as captured data.
 - Preserve unknown-schema payloads; require app update; do not discard.
 - Edit provenance: captured-on-Slab vs edited-in-app.
 
@@ -96,11 +105,11 @@ Owner-approved values are requirements. Proposed values are labeled. Details and
 
 **P1 electrical starting point (not production freeze)**
 
-- MCU+BLE: Seeed XIAO nRF52840 (DigiKey 102010448). Production candidate: Raytac MDBT50Q-1MV2 (nRF52840).
+- MCU+BLE: Seeed XIAO nRF52840 (DigiKey 102010448) is the **P1 bench** module. Raytac MDBT50Q-1MV2 (nRF52840) is a **production candidate**, not an approved alternate.
 - Display: Waveshare 2.9" B/W 296×128, SSD1680, 4-wire SPI.
-- Buttons: 5× Omron B3W-1000 (switch IP67 excluding terminals — **not** a product IP rating).
+- Buttons: 5× Omron B3W-1000 is the **P1 selection** and a **production candidate** pending DFM, wet/glove, and IP55 validation (switch IP67 excluding terminals — **not** a product IP rating). Not an approved production switch.
 - Battery concept: Adafruit 1578 3.7 V 500 mAh protected LiPo. Charge via XIAO USB-C / BQ25101 on P1.
-- Magnet: K&J DC6TP-N52 rubber-coated N52, Ø19.05 × 9.52 mm. Vendor Case-1 pull **13.12 lb** is a catalog figure, not a cart-retention test.
+- Magnet: K&J DC6TP-N52 rubber-coated N52, Ø19.05 × 9.52 mm, is the **P1 selection** and a **production candidate** pending DFM, RF, and retention validation. Vendor Case-1 pull **13.12 lb** is a catalog figure, not a cart-retention test. Not an approved production magnet.
 
 No custom schematic exists.
 
@@ -148,6 +157,7 @@ No custom schematic exists.
 | BTN-01 | Wet-glove + life | Proposed | B3W datasheet only | Cap design |
 | CMP-01 | US+EU design-in | Proposed | None | Module vs discrete radio |
 | CAD-01 | Neutral assembly STEP | Blocked | Files missing | Export or rebuild CAD |
+| ENT-01 | Every hole starts at zero; no par / two-putt / fairway-hit prefill; full manual entry through Slab | **Approved** | Firmware still prefills par / 2 / fairway (`slab_hole_apply_defaults`) | Firmware change; STAT-01 must fail until then |
 | PCB-01 | Custom PCB / schematic | TBD | None | P1 wiring vs production board |
 | CHG-01 | Charge time | TBD | None | Charger IC + cell |
 

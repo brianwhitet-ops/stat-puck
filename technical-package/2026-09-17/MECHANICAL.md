@@ -63,7 +63,7 @@ If IP55 / drop / cell force growth: **raise envelope**, do not weaken owner-appr
 | Row Y | −18.5 mm (below display) |
 | Top holes | Ø 8.4 mm (r = 4.2) |
 | Cap solids in generator | r = 3.8 × 2.2 mm on a 6.0 × 6.6 × 4.3 mm body — **not exported** |
-| Switch | Omron B3W-1000 (6 mm tactile, OF 1.57 N catalog) |
+| Switch | Omron B3W-1000 (6 mm tactile, OF 1.57 N catalog) — **P1 selection** and production **candidate** pending DFM, wet/glove, and IP55. Not an approved production switch. |
 | Glove / rain caps | **TBD** — switch IP67 ≠ product IP55 |
 
 ## 5. USB-C
@@ -92,7 +92,7 @@ Z values from `make_internals()` — **placeholder solids**, not a routed PCB.
 
 | Item | Value |
 | --- | --- |
-| Magnet | K&J DC6TP-N52, Ø19.05 × 9.52 mm, rubber-coated N52 |
+| Magnet | K&J DC6TP-N52, Ø19.05 × 9.52 mm, rubber-coated N52 — **P1 selection** and production **candidate** pending DFM, RF, and retention. Not an approved production magnet. |
 | Pocket | Ø19.2 + 0.15 mm radius, depth MAG_H + 0.4, toward exterior bottom, at (0, 18, 0) |
 | Catalog pull | **13.12 lb Case-1** (K&J) — **not** a cart or vibration test |
 | Retention | Must work on ferrous carts; plastic/non-ferrous carts use the **clamp**, not a steel plate kit |

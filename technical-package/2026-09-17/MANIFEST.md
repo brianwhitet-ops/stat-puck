@@ -6,7 +6,8 @@
 **Base `main`:** `fe7a88f100afa7f3d60271ff91e7fc2c33b08f49`  
 **First checkpoint (skeleton + cover):** `bc0c64d02ad60da5a0f7e064ba86e616a12139c3`  
 **Fill commit (complete docs):** `d88e7a3e1d551c42cc5706875de540de6f04e99b`  
-**This manifest lock:** last commit that changed this file (SHA-lock commit after fill)  
+**Reviewed lock (Instinct file-by-file):** `03dd4047d4915095430c125e703db08d5fa5361e`  
+**This manifest lock:** `03dd4047d4915095430c125e703db08d5fa5361e`  
 **Firmware (PR #1, not merged):** `e7f7ad79c885627616819ad08114a704024569f7`  
 **App contract (PR #3, not merged):** `57609af3f7e23819a89e01e5a803a8f36a80f5b8`
 
@@ -16,18 +17,18 @@ Paths are repo-relative.
 
 | File | Repo path | Commit SHA | Notes |
 | --- | --- | --- | --- |
-| Cover | `technical-package/2026-09-17/COVER.md` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | Internal; not for Peakingtech yet |
-| This manifest | `technical-package/2026-09-17/MANIFEST.md` | SHA-lock commit on this file | Maps every row below |
-| PRD + open requirements | `technical-package/2026-09-17/PRD.md` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | |
-| Target values | `technical-package/2026-09-17/TARGET-VALUES-FOR-OWNER-REVIEW.md` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | Owner-approved vs proposed |
-| Architecture | `technical-package/2026-09-17/ARCHITECTURE.md` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | |
-| Mechanical brief | `technical-package/2026-09-17/MECHANICAL.md` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | CAD blocker called |
-| Firmware status | `technical-package/2026-09-17/FIRMWARE-STATUS.md` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | Points at PR #1 SHA |
-| Engineering BOM | `technical-package/2026-09-17/BOM.csv` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | |
+| Cover | `technical-package/2026-09-17/COVER.md` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | Internal; not for Peakingtech yet; ENT-01 firmware-conflict blocker this revision |
+| This manifest | `technical-package/2026-09-17/MANIFEST.md` | `03dd4047d4915095430c125e703db08d5fa5361e` | Maps every row below. Concrete lock SHA (not a self-referential placeholder). |
+| PRD + open requirements | `technical-package/2026-09-17/PRD.md` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | Instinct correction this revision: zero-start hole entry |
+| Target values | `technical-package/2026-09-17/TARGET-VALUES-FOR-OWNER-REVIEW.md` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | Owner-approved vs proposed; ENT-01 this revision |
+| Architecture | `technical-package/2026-09-17/ARCHITECTURE.md` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | Zero-start + BOM status wording this revision |
+| Mechanical brief | `technical-package/2026-09-17/MECHANICAL.md` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | CAD blocker called; B3W / K&J candidate wording this revision |
+| Firmware status | `technical-package/2026-09-17/FIRMWARE-STATUS.md` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | Points at PR #1 SHA; hole-default conflict this revision |
+| Engineering BOM | `technical-package/2026-09-17/BOM.csv` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | Production-status correction this revision |
 | Evidence index | `technical-package/2026-09-17/EVIDENCE-INDEX.md` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | |
-| Validation matrix | `technical-package/2026-09-17/VALIDATION-MATRIX.md` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | |
+| Validation matrix | `technical-package/2026-09-17/VALIDATION-MATRIX.md` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | STAT-01 this revision |
 | BLE DFU | `technical-package/2026-09-17/BLE-DFU.md` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | NOT IMPLEMENTED on PR #1/#3 |
-| Puck/app contract notes | `technical-package/2026-09-17/PUCK-APP-CONTRACT-NOTES.md` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | DFU SM missing |
+| Puck/app contract notes | `technical-package/2026-09-17/PUCK-APP-CONTRACT-NOTES.md` | `d88e7a3e1d551c42cc5706875de540de6f04e99b` | DFU SM missing; par vs performance this revision |
 
 ## Cited sources
 

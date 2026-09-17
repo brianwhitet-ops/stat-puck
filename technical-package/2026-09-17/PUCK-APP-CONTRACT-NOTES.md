@@ -20,11 +20,16 @@ Website and PR #3 screens define **rules and types**, not a working radio.
 - No live-round phone dependency. v1 import is **app-open**, not background sync.
 - ACK **only** after a durable, validated write. Puck keeps unacknowledged rounds across disconnect and power cycle. Never delete on transmit alone.
 - Idempotent by `round_id`. Duplicates update sync metadata only.
-- GIR is **derived** (`strokes − putts ≤ par − 2`). Not a dedicated puck input. No MODE-to-GIR.
-- Drive is null on par 3; on par 4/5 only if the golfer set it.
+- GIR is **derived** from **captured** strokes and putts (`strokes − putts ≤ par − 2`). Not a dedicated puck input. No MODE-to-GIR. Do not derive GIR from an untouched hole.
+- **Course par is metadata. Golfer performance is entered.** `par` may come from a course card (or hardcoded `kDefaultPars` today). It must not create captured strokes, putts, or drive results.
+- **Zero-start / full manual entry (owner-approved 2026-09-17):** every hole starts at unset/zero strokes, unset/zero putts, and unset drive. Those fields become recorded only through Slab input. Displayed `0` is not a captured fact until the golfer enters it.
+- Drive is null on par 3; on par 4/5 only if the golfer set it. Do **not** serialize an untouched fairway hit (`H` / `fairway`) or a fabricated putt/stroke result as captured data.
+- Advancing or finishing a hole must not promote untouched defaults into FIR / GIR / putt facts.
 - 9 vs 18 is explicit (start as 9, or End-now-as-9). Never infer from idle.
 - App edits keep provenance (`captured_on_slab` vs `edited_in_app`).
 - Unknown schema: preserve payload, require app update, do not discard.
+
+**Current firmware conflict:** PR #1 `slab_hole_apply_defaults` still writes `strokes = par`, `putts = 2`, `fairway = SLAB_FWY_H` on par 4/5. The builder will emit those values if the golfer advances without editing. That is implementation truth, not the contract. See `FIRMWARE-STATUS.md` and `VALIDATION-MATRIX.md` STAT-01.
 
 ## PR #3 payload (contract)
 
@@ -49,6 +54,8 @@ Website and PR #3 screens define **rules and types**, not a working radio.
   "checksum": "..."
 }
 ```
+
+The example above is a **fully entered** hole, not a new-hole start state. A newly created hole may carry `par` (course metadata) but must not already contain captured `strokes`, `putts`, or `drive_result`. Until the golfer enters them, those performance fields stay unset/zero and must not be treated as FIR / GIR / putt facts.
 
 Import states in `round-contract.ts`:  
 `not_paired` → `pairing` → `connected` → `importing` → `imported` → `acknowledged`, plus `retry` and `app_update_required`.
