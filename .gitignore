@@ -11,3 +11,7 @@ firmware/testdata/out/
 firmware/testdata/nvram.bin
 firmware/testdata/nvram_test.bin
 .pio/
+
+# Host verification executables
+firmware/host/test_round_v2
+firmware/host/test_journal

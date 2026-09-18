@@ -73,5 +73,15 @@ int main(int argc, char **argv)
     slab_sync_ble_gate(&r);
     rc |= render_named(&r, out, "06-derived-stats");
 
+    /* Additional live states for review; original fixture goldens stay untouched. */
+    slab_round_init(&r);
+    rc |= render_named(&r, out, "07-zero-start");
+    slab_apply_event(&r, SLAB_EVT_PLUS);
+    slab_apply_event(&r, SLAB_EVT_NEXT);
+    rc |= render_named(&r, out, "08-unentered-putts");
+    slab_apply_event(&r, SLAB_EVT_MINUS);
+    slab_apply_event(&r, SLAB_EVT_NEXT);
+    rc |= render_named(&r, out, "09-zero-putts-confirm");
+
     return rc ? 1 : 0;
 }

@@ -14,16 +14,22 @@ CORE = \
 	../src/slab_input.c \
 	../src/slab_persist.c \
 	../src/slab_ble.c \
+	../src/slab_crc32.c \
+	../src/slab_store.c \
 	../src/slab_epd.c
 
 GOLD = ../../design/instinct-firmware-goldens-pr1
 
-.PHONY: all bench test visual clean
+.PHONY: all bench test fixtures visual clean
 
 all: bench test
 
 bench: bench_render
-test: test_state test_device_1bit
+test: test_state test_device_1bit test_round_v2 test_journal
+	./test_state
+	./test_device_1bit
+	./test_round_v2
+	./test_journal
 
 bench_render: bench_main.c png_write.c $(CORE)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ bench_main.c png_write.c $(CORE) $(LDFLAGS)
@@ -42,11 +48,23 @@ DEVICE_CORE = \
 	../src/slab_input.c \
 	../src/slab_persist.c \
 	../src/slab_ble.c \
+	../src/slab_crc32.c \
+	../src/slab_store.c \
 	../src/slab_epd.c
 
 test_device_1bit: ../tests/test_device_1bit.c $(DEVICE_CORE)
 	$(CC) $(CFLAGS) -I../include -I. -DSLAB_HOST=0 -o $@ \
 		../tests/test_device_1bit.c $(DEVICE_CORE)
+
+test_round_v2: ../tests/test_round_v2.c $(CORE)
+	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ ../tests/test_round_v2.c $(CORE) $(LDFLAGS)
+
+test_journal: ../tests/test_journal.c $(CORE)
+	$(CC) $(CFLAGS) $(CPPFLAGS) -o $@ ../tests/test_journal.c $(CORE) $(LDFLAGS)
+
+fixtures: test_round_v2
+	mkdir -p ../../protocol/fixtures
+	./test_round_v2 ../../protocol/fixtures
 
 visual: clean bench_render test_state test_device_1bit
 	python3 ../tests/verify_sha256.py $(GOLD)/SHA256SUMS.txt
@@ -56,4 +74,4 @@ visual: clean bench_render test_state test_device_1bit
 	python3 ../tests/compare_goldens.py ../testdata/out $(GOLD)
 
 clean:
-	rm -f bench_render test_state test_device_1bit
+	rm -f bench_render test_state test_device_1bit test_round_v2 test_journal
