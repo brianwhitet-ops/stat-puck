@@ -58,7 +58,12 @@ typedef struct {
     uint8_t putts;
     uint8_t fairway; /* slab_fwy_t */
     uint8_t locked;  /* 1 after END_HOLE_CONFIRM */
+    uint8_t captured; /* SLAB_CAPTURE_*; displayed zero is not an entry. */
 } slab_hole_t;
+
+#define SLAB_CAPTURE_STROKES 1u
+#define SLAB_CAPTURE_PUTTS 2u
+#define SLAB_CAPTURE_DRIVE 4u
 
 typedef struct {
     uint32_t magic;
@@ -69,7 +74,9 @@ typedef struct {
     uint8_t drive_sel; /* slab_fwy_t while confirming */
     uint8_t synced;
     uint8_t ble_advertise; /* 1 only in ROUND_COMPLETE_SYNC */
-    char round_id[37];
+    uint32_t round_sequence;
+    char round_id[SLAB_ROUND_ID_SIZE];
+    char device_id[SLAB_DEVICE_ID_SIZE];
     char course_name[32];
     char tees[12];
     slab_hole_t holes[SLAB_HOLES_MAX];

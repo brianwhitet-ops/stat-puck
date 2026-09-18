@@ -31,6 +31,7 @@ typedef struct {
     int gir_pct;
     int putts_total;
     int putts_avg_x100;
+    bool par_known, strokes_known, putts_known, vs_known, fixture;
 } slab_view_t;
 
 /* Instinct-encoded demo values (goldens 01–06). */
@@ -93,20 +94,26 @@ static void view_from_round(const slab_round_t *r, slab_view_t *v)
     memset(v, 0, sizeof(*v));
     v->hole = r->current_hole;
     v->par = h->par;
+    v->fixture = !strcmp(r->device_id, "bench") && !strcmp(r->tees, "GOLDEN");
+    v->par_known = h->par != 0;
+    v->strokes_known = (h->captured & SLAB_CAPTURE_STROKES) != 0;
+    v->putts_known = (h->captured & SLAB_CAPTURE_PUTTS) != 0;
     v->strokes = h->strokes;
     v->putts = h->putts;
     v->drive = (r->ui == SLAB_UI_END_HOLE_CONFIRM) ? r->drive_sel : h->fairway;
-    v->yards = (uint16_t)slab_course_yards((int)r->current_hole);
+    v->yards = v->fixture ? (uint16_t)slab_course_yards((int)r->current_hole) : 0;
+    v->vs_known = h->par != 0;
     v->through = 0;
     for (int i = 0; i < r->holes_played; i++) {
         if (r->holes[i].locked) {
             v->through = i + 1;
+            if (!r->holes[i].par) v->vs_known = false;
         }
     }
     v->vs_through = slab_round_vs_par(r, false);
     v->total = 0;
     for (int i = 0; i < r->holes_played; i++) {
-        if (r->holes[i].locked) {
+        if (r->holes[i].locked && (r->holes[i].captured & SLAB_CAPTURE_STROKES)) {
             v->total += r->holes[i].strokes;
         }
     }
@@ -115,7 +122,8 @@ static void view_from_round(const slab_round_t *r, slab_view_t *v)
     v->gir_holes = slab_round_gir_holes(r);
     v->gir_pct = v->gir_holes ? (v->gir_hits * 100) / v->gir_holes : 0;
     v->putts_total = slab_round_putts(r);
-    v->putts_avg_x100 = v->gir_holes ? (v->putts_total * 100) / v->gir_holes : 0;
+    int putt_holes = slab_round_putt_holes(r);
+    v->putts_avg_x100 = putt_holes ? (v->putts_total * 100) / putt_holes : 0;
 }
 
 static int u_to_s(char *b, unsigned n)
@@ -312,16 +320,28 @@ static void restyle_chip(slab_fb_t *fb, slab_box_t b)
 
 static void compose_header(slab_fb_t *fb, const slab_view_t *v)
 {
+    if (!v->fixture) {
+        char hole[4], par[8];
+        fmt_hole(hole, v->hole);
+        erase_box(fb, (slab_box_t){8, 4, 280, 17});
+        paint_s(fb, 12, 6, "HOLE"); paint_s(fb, 52, 6, hole);
+        paint_s(fb, 206, 6, "PAR");
+        if (v->par_known) u_to_s(par, v->par); else strcpy(par, "--");
+        paint_s(fb, 242, 6, par);
+        return;
+    }
     if (v->hole != G_HOLE) {
         char buf[4];
         fmt_hole(buf, v->hole);
         stamp_text(fb, kBoxHole, buf, 1);
     }
     if (v->par != G_PAR) {
-        stamp_u(fb, kBoxPar, v->par, 1);
+        if (v->par_known) stamp_u(fb, kBoxPar, v->par, 1);
+        else stamp_text(fb, kBoxPar, "-", 1);
     }
     if (v->yards != G_YARDS) {
-        stamp_u(fb, kBoxYards, v->yards, 1);
+        if (v->yards) stamp_u(fb, kBoxYards, v->yards, 1);
+        else stamp_text(fb, kBoxYards, "---", 1);
     }
 }
 
@@ -348,8 +368,8 @@ static void compose_live(slab_fb_t *fb, slab_ui_t ui, const slab_view_t *v)
         if (v->strokes != G_STROKES) {
             stamp_u(fb, kBoxHeroDefault, v->strokes, 2);
         }
-        if (v->vs_through != G_VS_THROUGH) {
-            fmt_vs(buf, v->vs_through);
+        if (!v->vs_known || v->vs_through != G_VS_THROUGH) {
+            if (v->vs_known) fmt_vs(buf, v->vs_through); else strcpy(buf, "-");
             stamp_text(fb, kBoxVsThrough, buf, 1);
         }
         if (v->through != G_THROUGH) {
@@ -359,6 +379,7 @@ static void compose_live(slab_fb_t *fb, slab_ui_t ui, const slab_view_t *v)
 
     case SLAB_UI_STROKE_EDIT:
         compose_header(fb, v);
+        if (!v->strokes_known) stamp_text(fb, (slab_box_t){8, 98, 280, 26}, "+ TO ENTER STROKES", 1);
         if (v->strokes != G_STROKES) {
             stamp_u(fb, kBoxHeroEdit, v->strokes, 2);
         }
@@ -366,6 +387,7 @@ static void compose_live(slab_fb_t *fb, slab_ui_t ui, const slab_view_t *v)
 
     case SLAB_UI_PUTTS_INPUT:
         compose_header(fb, v);
+        if (!v->putts_known) stamp_text(fb, (slab_box_t){8, 98, 280, 26}, "+ PUTTS / - FOR ZERO", 1);
         if (v->putts != G_PUTTS) {
             stamp_u(fb, kBoxHeroEdit, v->putts, 2);
         }
@@ -379,15 +401,30 @@ static void compose_live(slab_fb_t *fb, slab_ui_t ui, const slab_view_t *v)
         if (v->putts != G_PUTTS) {
             stamp_u(fb, kBoxConfirmPu, v->putts, 1);
         }
-        compose_drive(fb, v->drive);
+        if (v->fixture) compose_drive(fb, v->drive);
+        else {
+            erase_box(fb, (slab_box_t){8, 30, 180, 88});
+            paint_s(fb, 12, 33, "STROKES"); paint_s(fb, 108, 33, "PUTTS");
+            stamp_u(fb, (slab_box_t){12, 49, 48, 16}, v->strokes, 1);
+            stamp_u(fb, (slab_box_t){108, 49, 40, 16}, v->putts, 1);
+            paint_s(fb, 12, 73, "DRIVE");
+            if (v->par == 3) paint_s(fb, 20, 90, "NOT APPLICABLE");
+            else {
+                paint_s(fb, 20, 92, "L"); paint_s(fb, 60, 92, "FAIRWAY"); paint_s(fb, 152, 92, "R");
+                if (v->drive == SLAB_FWY_L) paint_s(fb, 20, 106, "-");
+                if (v->drive == SLAB_FWY_H) paint_s(fb, 60, 106, "-------");
+                if (v->drive == SLAB_FWY_R) paint_s(fb, 152, 106, "-");
+            }
+            stamp_text(fb, (slab_box_t){196, 99, 91, 24}, "NEXT", 1);
+        }
         break;
 
     case SLAB_UI_ROUND_COMPLETE_SYNC:
         if (v->total != G_TOTAL) {
             stamp_u(fb, kBoxTotal, (unsigned)v->total, 2);
         }
-        if (v->vs_round != G_VS_ROUND) {
-            fmt_vs(buf, v->vs_round);
+        if (!v->vs_known || v->vs_round != G_VS_ROUND) {
+            if (v->vs_known) fmt_vs(buf, v->vs_round); else strcpy(buf, "-");
             stamp_text(fb, kBoxCompleteVs, buf, 1);
         }
         break;
@@ -396,8 +433,8 @@ static void compose_live(slab_fb_t *fb, slab_ui_t ui, const slab_view_t *v)
         if (v->total != G_TOTAL) {
             stamp_u(fb, kBoxStatsTot, (unsigned)v->total, 1);
         }
-        if (v->vs_round != G_VS_ROUND) {
-            fmt_vs(buf, v->vs_round);
+        if (!v->vs_known || v->vs_round != G_VS_ROUND) {
+            if (v->vs_known) fmt_vs(buf, v->vs_round); else strcpy(buf, "-");
             stamp_text(fb, kBoxStatsVs, buf, 1);
         }
         if (v->gir_hits != G_GIR_HITS || v->gir_holes != G_GIR_HOLES) {
@@ -405,7 +442,7 @@ static void compose_live(slab_fb_t *fb, slab_ui_t ui, const slab_view_t *v)
             stamp_text(fb, kBoxGirFrac, buf, 1);
         }
         if (v->gir_pct != G_GIR_PCT) {
-            fmt_pct(buf, v->gir_pct);
+            if (v->gir_holes) fmt_pct(buf, v->gir_pct); else strcpy(buf, "--");
             stamp_text(fb, kBoxGirPct, buf, 2);
         }
         if (v->putts_total != G_PUTTS_TOT) {
@@ -437,4 +474,6 @@ void slab_ui_render(slab_fb_t *fb, const slab_round_t *r)
 #endif
     (void)slab_frame_1bit((slab_ui_t)r->ui, fb->px);
     compose_live(fb, (slab_ui_t)r->ui, &v);
+    if (r->ui == SLAB_UI_DEFAULT_HOLE && r->current_hole == 10 && r->holes_played == 18 && !r->holes[9].captured)
+        stamp_text(fb, (slab_box_t){4, 110, 288, 16}, "HOLD NEXT TO FINISH 9", 1);
 }

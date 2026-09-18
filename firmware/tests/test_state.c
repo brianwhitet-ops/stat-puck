@@ -44,6 +44,11 @@ static void test_sequence_lock(void)
 static void enter_confirm(slab_round_t *r, int hole)
 {
     r->current_hole = (uint8_t)hole;
+    r->holes[hole-1].strokes = 4;
+    r->holes[hole-1].putts = 2;
+    r->holes[hole-1].captured = 3;
+    r->holes[hole-1].fairway = SLAB_FWY_NA;
+    r->drive_sel = SLAB_FWY_NA;
     r->ui = SLAB_UI_PUTTS_INPUT;
     slab_apply_event(r, SLAB_EVT_NEXT);
 }
@@ -51,51 +56,57 @@ static void enter_confirm(slab_round_t *r, int hole)
 static void test_drive_par4_par5(void)
 {
     slab_round_t r;
-    slab_round_init(&r);
+    slab_round_init_fixture_hole7(&r);
 
     /* Hole 7 = par 4. */
     EXPECT(r.holes[6].par == 4, "hole 7 par 4");
     enter_confirm(&r, 7);
     EXPECT(r.ui == SLAB_UI_END_HOLE_CONFIRM, "par4 confirm");
-    EXPECT(r.drive_sel == SLAB_FWY_H, "par4 drive starts fairway");
+    r.holes[6].fairway = SLAB_FWY_NA;
+    r.holes[6].captured = 3;
+    r.drive_sel = SLAB_FWY_NA;
+    EXPECT(r.drive_sel == SLAB_FWY_NA, "par4 drive starts unset");
+    slab_apply_event(&r, SLAB_EVT_PLUS);
+    EXPECT(r.drive_sel == SLAB_FWY_L, "par4 first + -> L");
+    slab_apply_event(&r, SLAB_EVT_PLUS);
+    EXPECT(r.drive_sel == SLAB_FWY_H, "par4 + -> H");
     slab_apply_event(&r, SLAB_EVT_PLUS);
     EXPECT(r.drive_sel == SLAB_FWY_R, "par4 + -> R");
-    slab_apply_event(&r, SLAB_EVT_PLUS);
-    EXPECT(r.drive_sel == SLAB_FWY_L, "par4 + -> L");
-    slab_apply_event(&r, SLAB_EVT_PLUS);
-    EXPECT(r.drive_sel == SLAB_FWY_H, "par4 + wrap fairway");
     slab_apply_event(&r, SLAB_EVT_MINUS);
-    EXPECT(r.drive_sel == SLAB_FWY_L, "par4 - -> L");
+    EXPECT(r.drive_sel == SLAB_FWY_H, "par4 - -> H");
     slab_apply_event(&r, SLAB_EVT_MODE);
-    EXPECT(r.drive_sel == SLAB_FWY_H, "par4 MODE cycles drive");
+    EXPECT(r.drive_sel == SLAB_FWY_R, "par4 MODE cycles drive");
     slab_apply_event(&r, SLAB_EVT_NEXT);
     EXPECT(r.holes[6].locked, "par4 locked");
-    EXPECT(r.holes[6].fairway == SLAB_FWY_H, "par4 stored fairway");
+    EXPECT(r.holes[6].fairway == SLAB_FWY_R, "par4 stored entered drive");
     EXPECT(r.ui == SLAB_UI_DEFAULT_HOLE, "advance after par4");
     EXPECT(!slab_ble_should_advertise(&r), "no BLE mid-round after par4");
 
     /* Hole 4 = par 5. */
-    slab_round_init(&r);
+    slab_round_init_fixture_hole7(&r);
     EXPECT(r.holes[3].par == 5, "hole 4 par 5");
     enter_confirm(&r, 4);
     EXPECT(r.ui == SLAB_UI_END_HOLE_CONFIRM, "par5 confirm");
-    EXPECT(r.drive_sel != SLAB_FWY_NA, "par5 has drive selector");
+    EXPECT(r.drive_sel == SLAB_FWY_NA, "par5 starts unset");
     slab_apply_event(&r, SLAB_EVT_MINUS);
-    EXPECT(r.drive_sel == SLAB_FWY_L, "par5 - -> L");
+    EXPECT(r.drive_sel == SLAB_FWY_R, "par5 first - -> R");
     slab_apply_event(&r, SLAB_EVT_MINUS);
-    EXPECT(r.drive_sel == SLAB_FWY_R, "par5 - wrap R");
+    EXPECT(r.drive_sel == SLAB_FWY_H, "par5 - -> H");
     slab_apply_event(&r, SLAB_EVT_NEXT);
     EXPECT(r.holes[3].locked, "par5 locked");
-    EXPECT(r.holes[3].fairway == SLAB_FWY_R, "par5 stored R");
+    EXPECT(r.holes[3].fairway == SLAB_FWY_H, "par5 stored H");
     EXPECT(r.ui == SLAB_UI_DEFAULT_HOLE, "advance after par5");
 }
 
 static void test_par3_no_drive(void)
 {
     slab_round_t r;
-    slab_round_init(&r);
+    slab_round_init_fixture_hole7(&r);
     r.current_hole = 3;
     r.ui = SLAB_UI_PUTTS_INPUT;
+    r.holes[2].strokes = 3;
+    r.holes[2].putts = 2;
+    r.holes[2].captured = 3;
     slab_apply_event(&r, SLAB_EVT_NEXT);
     EXPECT(r.ui == SLAB_UI_END_HOLE_CONFIRM, "par3 confirm");
     EXPECT(r.drive_sel == SLAB_FWY_NA, "par3 no drive");
@@ -109,7 +120,8 @@ static void test_par3_no_drive(void)
 
 static void test_gir_derived_only(void)
 {
-    slab_hole_t h;
+    slab_hole_t h = {0};
+    h.captured = 3;
     h.par = 4;
     h.strokes = 4;
     h.putts = 2;
@@ -135,28 +147,31 @@ static void test_ble_gate(void)
     slab_apply_event(&r, SLAB_EVT_BACK);
     EXPECT(slab_ble_should_advertise(&r), "advertise back on sync");
 
-    char buf[2048];
+    char buf[SLAB_PAYLOAD_SIZE];
     int n = slab_ble_build_payload(&r, buf, sizeof(buf));
     EXPECT(n > 40, "payload");
-    EXPECT(strstr(buf, "stat-puck.round.v1") != NULL, "schema");
+    EXPECT(strstr(buf, "\"schema_version\":2") != NULL, "schema");
     EXPECT(strstr(buf, "ghin") == NULL && strstr(buf, "GHIN") == NULL, "no GHIN");
 }
 
 static void test_persist(void)
 {
-    slab_round_t a, b;
-    slab_round_init_fixture_hole7(&a);
-    a.ui = SLAB_UI_STROKE_EDIT;
-    a.holes[6].strokes = 6;
-    slab_sync_ble_gate(&a);
-    slab_persist_set_host_path("/tmp/slab_nvram_test.bin");
-    EXPECT(slab_persist_save(&a) == 0, "save");
+    slab_store_t a, b;
+    slab_store_init(&a);
+    EXPECT(slab_store_begin(&a, "test-persist", 18, NULL) == 0, "begin");
+    slab_apply_event(&a.active, SLAB_EVT_PLUS);
+    slab_persist_set_host_path("/tmp/slab_nvram_test_v2");
+    remove("/tmp/slab_nvram_test_v2.0");
+    remove("/tmp/slab_nvram_test_v2.1");
+    EXPECT(slab_persist_save_store(&a) == 0, "save");
     memset(&b, 0, sizeof(b));
-    EXPECT(slab_persist_load(&b) == 0, "load");
-    EXPECT(b.current_hole == 7, "hole persisted");
-    EXPECT(b.holes[6].strokes == 6, "strokes persisted");
-    EXPECT(b.ui == SLAB_UI_STROKE_EDIT, "ui persisted");
-    EXPECT(!slab_ble_should_advertise(&b), "gate after load");
+    EXPECT(slab_persist_load_store(&b) == 0, "load");
+    EXPECT(b.active.current_hole == 1, "hole persisted");
+    EXPECT(b.active.holes[0].strokes == 1, "entered strokes persisted");
+    EXPECT(b.active.holes[0].captured == SLAB_CAPTURE_STROKES, "capture flag persisted");
+    EXPECT(!slab_ble_should_advertise(&b.active), "gate after load");
+    remove("/tmp/slab_nvram_test_v2.0");
+    remove("/tmp/slab_nvram_test_v2.1");
 }
 
 static void test_debounce(void)

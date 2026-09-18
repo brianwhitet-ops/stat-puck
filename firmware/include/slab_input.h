@@ -11,6 +11,7 @@ typedef struct {
     uint8_t stable[SLAB_BTN_COUNT];
     uint8_t last[SLAB_BTN_COUNT];
     uint16_t held_ms[SLAB_BTN_COUNT];
+    uint8_t next_long_sent;
     uint8_t enc_a;
     uint8_t enc_b;
     int8_t enc_accum;
