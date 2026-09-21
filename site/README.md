@@ -1,4 +1,4 @@
-# Slab product site (playslabgolf.com)
+# Stats Lab — Slab product site (playslabgolf.com)
 
 Static product page plus a same-origin waitlist API. Do not deploy until Brian says yes.
 

@@ -130,6 +130,11 @@ input {
   letter-spacing: -0.03em;
 }
 
+.wordmark .wordmark-name {
+  font-size: clamp(1.05rem, 2.8vw, 1.5rem);
+  white-space: nowrap;
+}
+
 .wordmark-domain,
 .mono-label,
 .section-index,

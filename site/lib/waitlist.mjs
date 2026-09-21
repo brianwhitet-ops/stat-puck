@@ -21,7 +21,7 @@ async function forwardFormspree(email, formId) {
     body: JSON.stringify({
       email,
       _replyto: email,
-      _subject: "Slab first-batch list",
+      _subject: "Stats Lab — Slab first-batch list",
       source: "playslabgolf.com",
     }),
   });
