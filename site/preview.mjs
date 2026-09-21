@@ -87,7 +87,7 @@ const server = createServer(async (req, res) => {
 });
 
 server.listen(port, "127.0.0.1", () => {
-  console.log(`Slab preview http://127.0.0.1:${port}/`);
+  console.log(`Stats Lab · Slab site preview http://127.0.0.1:${port}/`);
   console.log(`Waitlist file ${localPath}`);
   if (process.env.FORMSPREE_FORM_ID) {
     console.log("Formspree forwarding is on.");
