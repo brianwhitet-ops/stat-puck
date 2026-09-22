@@ -54,7 +54,7 @@ The app's IndexedDB adapter requires a transaction that reports `strict` durabil
 
 The reference store supports one active round plus ten completed rounds, with backpressure before another round starts when the queue is full. Storage is a two-slot journal with version, size, sequence and CRC checks, flushed writes and readback. An interrupted inactive-slot write preserves the previous committed snapshot. Both slots corrupt or an old unsupported `/slab_round.bin` stops normal operation for service; it never silently resets the device.
 
-The XIAO startup calls the base mount-only filesystem operation. Its usual `InternalFS.begin()` would auto-format on mount failure and is deliberately not used. A fresh unformatted device requires an explicit factory/service format; the application will not format it automatically.
+The XIAO startup calls the base mount-only filesystem operation. Its usual `InternalFS.begin()` would auto-format on mount failure and is deliberately not used. A fresh unformatted device requires an explicit factory/service format; the application will not format it automatically. The bench image for that format is `firmware/tools/provision/` (`xiaoble_provision`). It is not linked into scoring startup. The operator procedure and the silicon evidence still missing are in `firmware/tools/provision/README.md`.
 
 Snapshots currently persist the versioned C structure layout. They are not a cross-compiler or future-firmware storage ABI. A production port must define and test migrations before changing layouts. A factory reset must preserve identity/sequence or provision a new identity namespace so old round ids cannot be reused.
 
