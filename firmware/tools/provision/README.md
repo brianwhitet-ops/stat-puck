@@ -117,11 +117,11 @@ Both `xiaoble` and `xiaoble_provision` extend the same platform pin in `firmware
 
 The scoring env name remains `xiaoble`. Its source filter and `main.cpp` mount call are unchanged aside from the platform and GxEPD2 pins above. Those pins replace the floating platform git URL and `GxEPD2@^1.5.8` so a later resolve cannot move the core that owns `InternalFileSystem::begin()`.
 
-Package versions and image hashes from the build that produced this commit are in the build record below. If that record still says pending, the images have not been identified.
+Package versions are in the build record below. The four ELF and HEX SHA-256 values there are workspace-specific artifact IDs from Lane's recorded build. They are not a byte-for-byte identity another workspace can reproduce.
 
 ## Build record
 
-Built in this workspace with PlatformIO Core 6.2.0. These hashes identify the linked files from that run. They are not a device measurement. This target does not emit `firmware.bin`. It does emit `firmware.zip`; two builds of the same elf produced different zip hashes, so the zip is not used as the identifier.
+Lane's recorded build in this workspace used PlatformIO Core 6.2.0. The four ELF and HEX SHA-256 values below are workspace-specific artifact IDs from that build. A separate clean workspace produced different hashes. They do not establish byte-for-byte cross-workspace reproducibility, and they are not a device measurement. This target does not emit `firmware.bin`. It does emit `firmware.zip`; two builds of the same elf produced different zip hashes, so the zip is not one of those artifact IDs.
 
 | Item | Value |
 | --- | --- |
@@ -134,10 +134,10 @@ Built in this workspace with PlatformIO Core 6.2.0. These hashes identify the li
 | InternalFileSystem / LittleFS (from the core) | 0.11.0 |
 | `check_no_autoformat.py` | passed (`warning lines: 11`) |
 | `make -C firmware/host test` | passed. Journal line: `journal: all 3328 interrupted-write offsets, corrupt slots and ACK retirement passed` |
-| SHA-256 `xiaoble_provision` `firmware.hex` | `816ab5f6537ceab5dd6d352540049717b6904c66c89702fd9a7e1f193bff640d` |
-| SHA-256 `xiaoble_provision` `firmware.elf` | `f21df2ea282b5a64831b2c9a13b1241a1fe95ca28f0ee3da19cd5848ed579507` |
-| SHA-256 `xiaoble` `firmware.hex` | `4f70589306930f40488f83de7d72aa469325112c519e72af5af6ac823b4d2d76` |
-| SHA-256 `xiaoble` `firmware.elf` | `b90f348285c910e90801cc7721e9531b5316a6c4600bb380ee35db5f64edff1a` |
+| Lane workspace artifact ID, SHA-256 `xiaoble_provision` `firmware.hex` | `816ab5f6537ceab5dd6d352540049717b6904c66c89702fd9a7e1f193bff640d` |
+| Lane workspace artifact ID, SHA-256 `xiaoble_provision` `firmware.elf` | `f21df2ea282b5a64831b2c9a13b1241a1fe95ca28f0ee3da19cd5848ed579507` |
+| Lane workspace artifact ID, SHA-256 `xiaoble` `firmware.hex` | `4f70589306930f40488f83de7d72aa469325112c519e72af5af6ac823b4d2d76` |
+| Lane workspace artifact ID, SHA-256 `xiaoble` `firmware.elf` | `b90f348285c910e90801cc7721e9531b5316a6c4600bb380ee35db5f64edff1a` |
 
 PlatformIO size summary, which is the same accounting as the earlier handoff's RAM line:
 
