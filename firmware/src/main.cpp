@@ -1,5 +1,9 @@
 #if !SLAB_HOST
 
+#if defined(SLAB_FACTORY_PROVISION)
+#error "Refusing to build scoring firmware with SLAB_FACTORY_PROVISION"
+#endif
+
 #include <Arduino.h>
 #include <SPI.h>
 #include <GxEPD2_BW.h>

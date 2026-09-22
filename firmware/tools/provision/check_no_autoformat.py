@@ -63,8 +63,8 @@ def main():
         errors += fail("firmware/src contains InternalFS.begin( or .format(")
     if "STORAGE ERROR" not in main_text or "NO DATA ERASED" not in main_text:
         errors += fail("scoring firmware must keep STORAGE ERROR / NO DATA ERASED")
-    if "SLAB_FACTORY_PROVISION" in main_text:
-        errors += fail("scoring firmware must not reference the provisioner flag")
+    if "Refusing to build scoring firmware with SLAB_FACTORY_PROVISION" not in main_text:
+        errors += fail("scoring firmware must refuse the provisioner build flag")
 
     if "InternalFS.begin(" in provision_text:
         errors += fail("provisioner must not call InternalFS.begin()")
@@ -91,14 +91,17 @@ def main():
     provision_env = env_block(ini_text, "env:xiaoble_provision")
     if not xiaoble or not provision_env:
         errors += fail("platformio.ini is missing xiaoble or xiaoble_provision")
-    if "src_dir" in xiaoble:
+    if "src_dir" in xiaoble or "extra_scripts" in xiaoble:
         errors += fail("scoring env must keep the default src directory")
     if "SLAB_FACTORY_PROVISION" in xiaoble:
         errors += fail("scoring env must not define SLAB_FACTORY_PROVISION")
-    if "src_dir = tools/provision" not in provision_env:
-        errors += fail("provision env must use src_dir = tools/provision")
+    if "extra_scripts = pre:tools/provision/redirect_src.py" not in provision_env:
+        errors += fail("provision env must redirect sources to tools/provision")
     if "SLAB_FACTORY_PROVISION" not in provision_env:
         errors += fail("provision env must define SLAB_FACTORY_PROVISION")
+    redirect = (ROOT / "firmware" / "tools" / "provision" / "redirect_src.py").read_text()
+    if 'tools", "provision"' not in redirect or "InternalFS.begin(" not in redirect:
+        errors += fail("redirect_src.py must select and check the provisioner sketch")
     if "xiaoble_adafruit" not in ini_text:
         errors += fail("board must stay xiaoble_adafruit")
 

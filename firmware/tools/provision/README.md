@@ -111,8 +111,9 @@ Both `xiaoble` and `xiaoble_provision` extend the same platform pin in `firmware
 | Platform | `https://github.com/maxgerhardt/platform-nordicnrf52.git#cac6fcf943a41accd2aeb4f3659ae297a73f422e` (10.1.0, recorded earlier as `10.1.0+sha.cac6fcf`) |
 | Framework package | `framework-arduinoadafruitnrf52-seeed` at `3ae21c3c6c544fed6e949f00986324dd95fb2b89` (Seeed core 1.1.1, recorded earlier as `1.10101.0+sha.3ae21c3`) |
 | Toolchain package | `toolchain-gccarmnoneeabi@1.70201.0` (GCC ARM 7.2.1) |
-| Display library, scoring env only | `zinggjm/GxEPD2@1.6.9` |
-| Provisioner env | no GxEPD2 dependency; `src_dir = tools/provision`; `-DSLAB_FACTORY_PROVISION=1` |
+| CMSIS / nrfutil / srec | `framework-cmsis@2.50700.210515`, `tool-adafruit-nrfutil@1.503.0`, `tool-sreccat@1.164.0` |
+| Display libraries, scoring env only | `zinggjm/GxEPD2@1.6.9`, `adafruit/Adafruit GFX Library@1.12.6`, `adafruit/Adafruit BusIO@1.17.4` |
+| Provisioner env | no display libraries; `-DSLAB_FACTORY_PROVISION=1`; `extra_scripts = pre:tools/provision/redirect_src.py` selects `firmware/tools/provision` because PlatformIO 6.2 ignores `src_dir` on an environment |
 
 The scoring env name remains `xiaoble`. Its source filter and `main.cpp` mount call are unchanged aside from the platform and GxEPD2 pins above. Those pins replace the floating platform git URL and `GxEPD2@^1.5.8` so a later resolve cannot move the core that owns `InternalFileSystem::begin()`.
 
@@ -120,23 +121,34 @@ Package versions and image hashes from the build that produced this commit are i
 
 ## Build record
 
-Filled from the PlatformIO build in this workspace. These hashes identify the linked files. They are not a device measurement.
+Built in this workspace with PlatformIO Core 6.2.0. These hashes identify the linked files from that run. They are not a device measurement. This target does not emit `firmware.bin`. It does emit `firmware.zip`; two builds of the same elf produced different zip hashes, so the zip is not used as the identifier.
 
 | Item | Value |
 | --- | --- |
-| PlatformIO Core | pending |
-| Resolved platform | pending |
-| Resolved framework | pending |
-| Resolved toolchain | pending |
-| Resolved GxEPD2 | pending |
-| `firmware/tools/provision/check_no_autoformat.py` | pending |
-| `make -C firmware/host test` | pending |
-| SHA-256 `xiaoble_provision` firmware.hex | pending |
-| SHA-256 `xiaoble_provision` firmware.bin | pending |
-| SHA-256 `xiaoble` firmware.hex | pending |
-| SHA-256 `xiaoble` firmware.bin | pending |
+| PlatformIO Core | 6.2.0 |
+| Resolved platform | `nordicnrf52 @ 10.1.0+sha.cac6fcf` |
+| Resolved framework | `framework-arduinoadafruitnrf52-seeed @ 1.10101.0+sha.3ae21c3c` |
+| Resolved toolchain | `toolchain-gccarmnoneeabi @ 1.70201.0` (7.2.1) |
+| Resolved CMSIS / nrfutil / srec | `2.50700.210515` / `1.503.0` / `1.164.0` |
+| Resolved GxEPD2 / GFX / BusIO | `1.6.9` / `1.12.6` / `1.17.4` |
+| InternalFileSystem / LittleFS (from the core) | 0.11.0 |
+| `check_no_autoformat.py` | passed (`warning lines: 11`) |
+| `make -C firmware/host test` | passed. Journal line: `journal: all 3328 interrupted-write offsets, corrupt slots and ACK retirement passed` |
+| SHA-256 `xiaoble_provision` `firmware.hex` | `816ab5f6537ceab5dd6d352540049717b6904c66c89702fd9a7e1f193bff640d` |
+| SHA-256 `xiaoble_provision` `firmware.elf` | `f21df2ea282b5a64831b2c9a13b1241a1fe95ca28f0ee3da19cd5848ed579507` |
+| SHA-256 `xiaoble` `firmware.hex` | `4f70589306930f40488f83de7d72aa469325112c519e72af5af6ac823b4d2d76` |
+| SHA-256 `xiaoble` `firmware.elf` | `b90f348285c910e90801cc7721e9531b5316a6c4600bb380ee35db5f64edff1a` |
 
-Linker size lines, if the build prints them, belong in the commit that fills this table. RAM and flash figures from the linker are not runtime stack or heap measurements.
+PlatformIO size summary, which is the same accounting as the earlier handoff's RAM line:
+
+- `xiaoble_provision`: RAM 11488 of 237568 bytes, flash 62160 of 811008 bytes
+- `xiaoble`: RAM 35236 of 237568 bytes, flash 146268 of 811008 bytes
+
+`arm-none-eabi-size -B` on those elf files: scoring `text 145408`, `data 860`, `bss 234660`; provisioner `text 61316`, `data 844`, `bss 234676`. Neither number is runtime stack or heap use.
+
+The linked scoring elf contains `Adafruit_LittleFS::begin(lfs_config*)` and the panel strings `QUICK START`, `STORAGE ERROR`, and `NO DATA ERASED`. It does not contain `InternalFileSystem::begin`, `Adafruit_LittleFS::format`, `flash_nrf5x_erase`, or `ERASE SLAB FS`. The linked provisioner elf contains `Adafruit_LittleFS::begin`, `format`, `end`, and `flash_nrf5x_erase`, plus the warning text. It does not contain `InternalFileSystem::begin`. That is a link check, not a silicon test.
+
+The handoff recorded scoring flash as 146284 bytes before this pin and the compile-time refuse guard. This build reports 146268. RAM is the same 35236. Do not treat the images as byte-identical to that earlier package.
 
 ## Unverified on silicon
 
