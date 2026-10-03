@@ -23,6 +23,11 @@ int slab_course_yards(int hole)
     return (int)kYards[hole - 1];
 }
 
+const uint8_t *slab_demo_pars(void)
+{
+    return kDefaultPars;
+}
+
 static bool identifier(const char *s, size_t cap)
 {
     if (!s || !s[0]) return false;
@@ -159,11 +164,9 @@ void slab_round_init_fixture_hole7(slab_round_t *r)
     slab_sync_ble_gate(r);
 }
 
-void slab_round_init_fixture_complete(slab_round_t *r)
+static void fill_complete_scores(slab_round_t *r)
 {
     /* Goldens 05–06: 74 / +2 / GIR 11/18 61% / 31 putts / 1.72 per hole. */
-    (void)slab_round_start(r, "bench", 1, 18, kDefaultPars);
-    memcpy(r->tees, "GOLDEN", 7);
     static const uint8_t st[] = {4, 4, 3, 5, 4, 4, 4, 4, 5, 4, 4, 3, 5, 4, 4, 3, 4, 6};
     static const uint8_t pu[] = {2, 2, 2, 2, 1, 1, 2, 2, 2, 1, 1, 2, 2, 1, 2, 2, 2, 2};
     static const uint8_t fw[] = {
@@ -176,6 +179,22 @@ void slab_round_init_fixture_complete(slab_round_t *r)
     r->ui = SLAB_UI_ROUND_COMPLETE_SYNC;
     r->holes_played = 18;
     slab_sync_ble_gate(r);
+}
+
+void slab_round_init_fixture_complete(slab_round_t *r)
+{
+    (void)slab_round_start(r, "bench", 1, 18, kDefaultPars);
+    memcpy(r->tees, "GOLDEN", 7);
+    fill_complete_scores(r);
+}
+
+int slab_round_load_demo_complete(slab_round_t *r, const char *device_id, uint32_t sequence)
+{
+    if (slab_round_start(r, device_id, sequence, 18, kDefaultPars)) return -1;
+    memcpy(r->course_name, "DEMO", 5);
+    memcpy(r->tees, "PAR72", 6);
+    fill_complete_scores(r);
+    return slab_round_complete(r) ? 0 : -1;
 }
 
 bool slab_hole_gir_known(const slab_hole_t *h)
@@ -351,36 +370,55 @@ static void clamp_putts(slab_hole_t *h)
     }
 }
 
-static uint8_t cycle_drive(uint8_t cur_sel, int dir)
+static bool drive_hole(const slab_hole_t *h)
 {
-    /* First deliberate input leaves unset; later inputs cycle L/H/R. */
-    if (cur_sel == SLAB_FWY_NA) return dir > 0 ? SLAB_FWY_L : SLAB_FWY_R;
-    static const uint8_t order[] = {SLAB_FWY_L, SLAB_FWY_H, SLAB_FWY_R};
-    int idx = 1;
-    for (int i = 0; i < 3; i++) {
-        if (order[i] == cur_sel) {
-            idx = i;
-            break;
-        }
+    return h->par == 4 || h->par == 5;
+}
+
+/* Fairway is the resting value. + picks left, − picks right, and the
+ * opposite button returns to fairway. It does not cycle past the ends. */
+static uint8_t nudge_drive(uint8_t cur_sel, int dir)
+{
+    if (cur_sel != SLAB_FWY_L && cur_sel != SLAB_FWY_H && cur_sel != SLAB_FWY_R) {
+        cur_sel = SLAB_FWY_H;
     }
-    idx += dir;
-    if (idx < 0) {
-        idx = 2;
+    if (dir > 0) {
+        return cur_sel == SLAB_FWY_R ? SLAB_FWY_H : SLAB_FWY_L;
     }
-    if (idx > 2) {
-        idx = 0;
-    }
-    return order[idx];
+    return cur_sel == SLAB_FWY_L ? SLAB_FWY_H : SLAB_FWY_R;
+}
+
+static bool hole_untouched(const slab_hole_t *h)
+{
+    return h->locked == 0 && h->captured == 0;
+}
+
+/* MODE/BACK on a fresh hole reopens only the hole just locked. */
+static bool reopen_previous(slab_round_t *r)
+{
+    if (r->ui != SLAB_UI_DEFAULT_HOLE || r->current_hole < 2) return false;
+    if (!hole_untouched(cur(r))) return false;
+    slab_hole_t *prev = &r->holes[r->current_hole - 2];
+    if (!prev->locked) return false;
+    prev->locked = 0;
+    r->current_hole--;
+    r->ui = SLAB_UI_DEFAULT_HOLE;
+    r->drive_sel = drive_hole(prev) ? prev->fairway : SLAB_FWY_NA;
+    return true;
 }
 
 static void lock_and_advance(slab_round_t *r)
 {
     slab_hole_t *h = cur(r);
-    if (h->par == 3) {
-        h->fairway = SLAB_FWY_NA;
-    } else {
+    if (drive_hole(h)) {
+        if (r->drive_sel != SLAB_FWY_L && r->drive_sel != SLAB_FWY_H && r->drive_sel != SLAB_FWY_R) {
+            r->drive_sel = SLAB_FWY_H;
+        }
         h->fairway = r->drive_sel;
-        if (h->fairway != SLAB_FWY_NA) h->captured |= SLAB_CAPTURE_DRIVE;
+        h->captured |= SLAB_CAPTURE_DRIVE;
+    } else {
+        h->fairway = SLAB_FWY_NA;
+        h->captured = (uint8_t)(h->captured & (uint8_t)~SLAB_CAPTURE_DRIVE);
     }
     h->locked = 1;
     if (r->current_hole >= r->holes_played) {
@@ -400,9 +438,10 @@ slab_refresh_t slab_apply_event(slab_round_t *r, slab_evt_t ev)
 {
     slab_ui_t prev = (slab_ui_t)r->ui;
     bool value_only = false;
+    bool structural = false;
     slab_hole_t *h = cur(r);
 
-    if (ev == SLAB_EVT_NONE) {
+    if (ev == SLAB_EVT_NONE || ev == SLAB_EVT_LONG_MODE) {
         return SLAB_REFRESH_NONE;
     }
 
@@ -410,6 +449,8 @@ slab_refresh_t slab_apply_event(slab_round_t *r, slab_evt_t ev)
     case SLAB_UI_DEFAULT_HOLE:
         if (ev == SLAB_EVT_LONG_NEXT && slab_round_finish_nine(r)) break;
         if (ev == SLAB_EVT_PLUS || ev == SLAB_EVT_MINUS) {
+            /* Known par is the starting count. Unknown par still starts at zero. */
+            if (!(h->captured & SLAB_CAPTURE_STROKES) && h->par) h->strokes = h->par;
             r->ui = SLAB_UI_STROKE_EDIT;
             if (ev == SLAB_EVT_PLUS) {
                 h->strokes++;
@@ -419,9 +460,17 @@ slab_refresh_t slab_apply_event(slab_round_t *r, slab_evt_t ev)
             clamp_strokes(h);
             if (h->strokes) h->captured |= SLAB_CAPTURE_STROKES;
         } else if (ev == SLAB_EVT_NEXT) {
-            r->ui = SLAB_UI_STROKE_EDIT;
+            if (h->captured & SLAB_CAPTURE_STROKES) {
+                r->ui = SLAB_UI_STROKE_EDIT;
+            } else if (h->par) {
+                h->strokes = h->par;
+                h->captured |= SLAB_CAPTURE_STROKES;
+                r->ui = SLAB_UI_PUTTS_INPUT;
+            } else {
+                r->ui = SLAB_UI_STROKE_EDIT;
+            }
         } else if (ev == SLAB_EVT_BACK || ev == SLAB_EVT_MODE) {
-            /* MODE during play is not a GIR prompt. Ignore. */
+            structural = reopen_previous(r);
         }
         break;
 
@@ -460,7 +509,9 @@ slab_refresh_t slab_apply_event(slab_round_t *r, slab_evt_t ev)
             if (h->captured & SLAB_CAPTURE_STROKES) h->captured |= SLAB_CAPTURE_PUTTS;
             value_only = true;
         } else if (ev == SLAB_EVT_NEXT && (h->captured & 3u) == 3u) {
-            r->drive_sel = h->fairway;
+            if (!drive_hole(h)) r->drive_sel = SLAB_FWY_NA;
+            else if (h->captured & SLAB_CAPTURE_DRIVE) r->drive_sel = h->fairway;
+            else r->drive_sel = SLAB_FWY_H;
             r->ui = SLAB_UI_END_HOLE_CONFIRM;
         } else if (ev == SLAB_EVT_BACK || ev == SLAB_EVT_MODE) {
             r->ui = SLAB_UI_STROKE_EDIT;
@@ -468,13 +519,13 @@ slab_refresh_t slab_apply_event(slab_round_t *r, slab_evt_t ev)
         break;
 
     case SLAB_UI_END_HOLE_CONFIRM:
-        if (h->par != 3 && (ev == SLAB_EVT_PLUS || ev == SLAB_EVT_MODE)) {
-            r->drive_sel = cycle_drive(r->drive_sel, +1);
+        if (drive_hole(h) && ev == SLAB_EVT_PLUS) {
+            r->drive_sel = nudge_drive(r->drive_sel, +1);
             h->fairway = r->drive_sel;
             h->captured |= SLAB_CAPTURE_DRIVE;
             value_only = true;
-        } else if (h->par != 3 && ev == SLAB_EVT_MINUS) {
-            r->drive_sel = cycle_drive(r->drive_sel, -1);
+        } else if (drive_hole(h) && ev == SLAB_EVT_MINUS) {
+            r->drive_sel = nudge_drive(r->drive_sel, -1);
             h->fairway = r->drive_sel;
             h->captured |= SLAB_CAPTURE_DRIVE;
             value_only = true;
@@ -486,7 +537,7 @@ slab_refresh_t slab_apply_event(slab_round_t *r, slab_evt_t ev)
         break;
 
     case SLAB_UI_ROUND_COMPLETE_SYNC:
-        if (ev == SLAB_EVT_MODE || ev == SLAB_EVT_NEXT) {
+        if (ev == SLAB_EVT_MODE || ev == SLAB_EVT_NEXT || ev == SLAB_EVT_BACK) {
             r->ui = SLAB_UI_DERIVED_STATS;
         }
         break;
@@ -503,7 +554,7 @@ slab_refresh_t slab_apply_event(slab_round_t *r, slab_evt_t ev)
 
     slab_sync_ble_gate(r);
 
-    if (r->ui != prev) {
+    if (structural || r->ui != prev) {
         return SLAB_REFRESH_FULL;
     }
     if (value_only) {

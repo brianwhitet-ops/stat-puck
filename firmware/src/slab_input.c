@@ -8,6 +8,7 @@ void slab_input_init(slab_input_t *in)
         in->held_ms[i] = 0;
     }
     in->next_long_sent = 0;
+    in->mode_long_sent = 0;
     in->enc_a = 0;
     in->enc_b = 0;
     in->enc_accum = 0;
@@ -29,7 +30,7 @@ slab_evt_t slab_input_poll(slab_input_t *in, const uint8_t raw_down[SLAB_BTN_COU
 {
     slab_evt_t ev = SLAB_EVT_NONE;
 
-    /* Debounce; NEXT emits on release or once at long threshold, never both. */
+    /* Debounce. NEXT and MODE emit on release, or once at the hold threshold, never both. */
     for (int i = 0; i < SLAB_BTN_COUNT; i++) {
         uint8_t down = raw_down[i] ? 1 : 0;
         if (down == in->last[i]) {
@@ -48,21 +49,28 @@ slab_evt_t slab_input_poll(slab_input_t *in, const uint8_t raw_down[SLAB_BTN_COU
                 if (down) in->next_long_sent = 0;
                 else if (prev && !in->next_long_sent && ev == SLAB_EVT_NONE) ev = SLAB_EVT_NEXT;
             }
+            if (i == SLAB_BTN_MODE) {
+                if (down) in->mode_long_sent = 0;
+                else if (prev && !in->mode_long_sent && ev == SLAB_EVT_NONE) ev = SLAB_EVT_BACK;
+            }
             if (down && !prev) {
                 if (i == SLAB_BTN_PLUS && ev == SLAB_EVT_NONE) {
                     ev = SLAB_EVT_PLUS;
                 } else if (i == SLAB_BTN_MINUS && ev == SLAB_EVT_NONE) {
                     ev = SLAB_EVT_MINUS;
-                } else if (i == SLAB_BTN_MODE && ev == SLAB_EVT_NONE) {
-                    ev = SLAB_EVT_BACK;
                 }
-                /* PUTT ignored: sequential lock, no skip to putts / no GIR. */
+                /* PUTT ignored. MODE is release / hold, not a press-edge. */
             }
         }
         if (i == SLAB_BTN_NEXT && in->stable[i] &&
             in->held_ms[i] >= SLAB_LONG_PRESS_MS && !in->next_long_sent && ev == SLAB_EVT_NONE) {
             in->next_long_sent = 1;
             ev = SLAB_EVT_LONG_NEXT;
+        }
+        if (i == SLAB_BTN_MODE && in->stable[i] &&
+            in->held_ms[i] >= SLAB_MODE_HOLD_MS && !in->mode_long_sent && ev == SLAB_EVT_NONE) {
+            in->mode_long_sent = 1;
+            ev = SLAB_EVT_LONG_MODE;
         }
     }
 

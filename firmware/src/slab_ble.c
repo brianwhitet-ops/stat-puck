@@ -79,3 +79,80 @@ bool slab_ble_checksum(const slab_round_t *r, char out[15])
     out[14] = 0;
     return true;
 }
+
+int slab_ble_build_meta(const slab_round_t *r, int byte_length, int page_length, int long_read,
+                        char *out, int out_sz)
+{
+    if (!out || out_sz < 1) return 0;
+    out[0] = 0;
+    char sum[15];
+    if (!slab_ble_checksum(r, sum) || byte_length < 1 || page_length < 1) return 0;
+    int n = snprintf(out, (size_t)out_sz,
+                     "{\"schema_version\":2,\"round_id\":\"%s\",\"device_id\":\"%s\","
+                     "\"round_sequence\":%lu,\"checksum\":\"%s\",\"byte_length\":%d,"
+                     "\"page_length\":%d,\"long_read\":%d}",
+                     r->round_id, r->device_id, (unsigned long)r->round_sequence, sum,
+                     byte_length, page_length, long_read ? 1 : 0);
+    if (n < 0 || n >= out_sz) {
+        out[0] = 0;
+        return 0;
+    }
+    return n;
+}
+
+static const char *find_key(const char *json, const char *key)
+{
+    char pat[40];
+    int n = snprintf(pat, sizeof(pat), "\"%s\"", key);
+    if (n <= 0 || (size_t)n >= sizeof(pat) || !json) return NULL;
+    const char *p = strstr(json, pat);
+    if (!p) return NULL;
+    p += n;
+    while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') p++;
+    if (*p != ':') return NULL;
+    p++;
+    while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') p++;
+    return p;
+}
+
+static bool take_string(const char *p, char *out, size_t cap)
+{
+    if (!p || *p != '"' || cap < 2) return false;
+    p++;
+    size_t i = 0;
+    while (*p && *p != '"') {
+        if (i + 1 >= cap) return false;
+        out[i++] = *p++;
+    }
+    if (*p != '"') return false;
+    out[i] = 0;
+    return i > 0;
+}
+
+static bool take_u32(const char *p, uint32_t *out)
+{
+    if (!p || *p < '0' || *p > '9') return false;
+    unsigned long v = 0;
+    while (*p >= '0' && *p <= '9') {
+        unsigned long next = v * 10ul + (unsigned long)(*p - '0');
+        if (next < v || next > 4294967295ul) return false;
+        v = next;
+        p++;
+    }
+    if (!v) return false;
+    *out = (uint32_t)v;
+    return true;
+}
+
+bool slab_ble_parse_ack(const char *json, char *device, size_t device_cap, char *round_id,
+                        size_t round_cap, uint32_t *sequence, char checksum[15])
+{
+    if (!json || !device || !round_id || !sequence || !checksum) return false;
+    uint32_t schema = 0;
+    if (!take_u32(find_key(json, "schema_version"), &schema) || schema != SLAB_SCHEMA_VERSION) return false;
+    if (!take_string(find_key(json, "device_id"), device, device_cap)) return false;
+    if (!take_string(find_key(json, "round_id"), round_id, round_cap)) return false;
+    if (!take_u32(find_key(json, "round_sequence"), sequence)) return false;
+    if (!take_string(find_key(json, "checksum"), checksum, 15)) return false;
+    return true;
+}

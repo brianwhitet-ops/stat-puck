@@ -31,7 +31,7 @@ typedef struct {
     int gir_pct;
     int putts_total;
     int putts_avg_x100;
-    bool par_known, strokes_known, putts_known, vs_known, fixture;
+    bool par_known, strokes_known, putts_known, vs_known, fixture, drive_hint;
 } slab_view_t;
 
 /* Instinct-encoded demo values (goldens 01–06). */
@@ -100,6 +100,13 @@ static void view_from_round(const slab_round_t *r, slab_view_t *v)
     v->putts_known = (h->captured & SLAB_CAPTURE_PUTTS) != 0;
     v->strokes = h->strokes;
     v->putts = h->putts;
+    /* Show par before the player touches the count. Stored strokes stay 0 until accepted. */
+    if (!v->strokes_known && h->par >= 3 && h->par <= 5 &&
+        (r->ui == SLAB_UI_DEFAULT_HOLE || r->ui == SLAB_UI_STROKE_EDIT)) {
+        v->strokes = h->par;
+    }
+    v->drive_hint = !v->fixture && h->par >= 4 &&
+        !(r->current_hole == 10 && r->holes_played == 18 && h->captured == 0);
     v->drive = (r->ui == SLAB_UI_END_HOLE_CONFIRM) ? r->drive_sel : h->fairway;
     v->yards = v->fixture ? (uint16_t)slab_course_yards((int)r->current_hole) : 0;
     v->vs_known = h->par != 0;
@@ -375,6 +382,7 @@ static void compose_live(slab_fb_t *fb, slab_ui_t ui, const slab_view_t *v)
         if (v->through != G_THROUGH) {
             stamp_u(fb, kBoxThroughN, (unsigned)v->through, 1);
         }
+        if (v->drive_hint) stamp_text(fb, (slab_box_t){4, 110, 288, 16}, "DRIVE FAIRWAY", 1);
         break;
 
     case SLAB_UI_STROKE_EDIT:
@@ -408,7 +416,7 @@ static void compose_live(slab_fb_t *fb, slab_ui_t ui, const slab_view_t *v)
             stamp_u(fb, (slab_box_t){12, 49, 48, 16}, v->strokes, 1);
             stamp_u(fb, (slab_box_t){108, 49, 40, 16}, v->putts, 1);
             paint_s(fb, 12, 73, "DRIVE");
-            if (v->par == 3) paint_s(fb, 20, 90, "NOT APPLICABLE");
+            if (v->par < 4) paint_s(fb, 20, 90, "NOT APPLICABLE");
             else {
                 paint_s(fb, 20, 92, "L"); paint_s(fb, 60, 92, "FAIRWAY"); paint_s(fb, 152, 92, "R");
                 if (v->drive == SLAB_FWY_L) paint_s(fb, 20, 106, "-");

@@ -12,6 +12,7 @@
 
 #define SLAB_DEBOUNCE_MS 25
 #define SLAB_LONG_PRESS_MS 600
+#define SLAB_MODE_HOLD_MS 2000
 #define SLAB_ENCODER_DEBOUNCE_MS 2
 
 #define SLAB_PARTIAL_BEFORE_FULL 8
@@ -32,6 +33,11 @@
 #define SLAB_DEVICE_ID_SIZE 49
 #define SLAB_PAYLOAD_SIZE 4096
 #define SLAB_QUEUE_CAPACITY 10
+/* GATT page size. 512 matches the usual SoftDevice variable-attribute cap.
+ * 4096 / 512 = 8 pages, so a max-size round body fits in the page set. */
+#define SLAB_BLE_PAGE_LEN 512
+#define SLAB_BLE_PAGE_COUNT (SLAB_PAYLOAD_SIZE / SLAB_BLE_PAGE_LEN)
+#define SLAB_BLE_CHUNK_LEN 180
 
 #define SLAB_DEVICE_ID "SPK-0001"
 

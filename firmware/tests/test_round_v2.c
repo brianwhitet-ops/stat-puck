@@ -22,34 +22,41 @@ static void test_capture(void)
     uint8_t pars[18]; memset(pars, 4, sizeof(pars));
     assert(!slab_round_start(&r, "test", 1, 18, pars));
     char payload[SLAB_PAYLOAD_SIZE];
-    for (int i = 0; i < 100; i++) slab_apply_event(&r, SLAB_EVT_NEXT);
-    assert(r.current_hole == 1 && r.holes[0].captured == 0);
-    assert(r.holes[0].strokes == 0 && r.holes[0].putts == 0 && r.holes[0].fairway == 0);
+    assert(r.holes[0].captured == 0 && r.holes[0].strokes == 0);
     assert(slab_round_gir_holes(&r) == 0 && slab_round_fwy_holes(&r) == 0);
     assert(!slab_ble_should_advertise(&r));
     assert(slab_ble_build_payload(&r, payload, sizeof(payload)) > 0);
     assert(strstr(payload, "\"strokes\":null,\"putts\":null,\"drive_result\":null"));
+    /* Known par: NEXT accepts par. + starts at par+1. */
+    slab_apply_event(&r, SLAB_EVT_NEXT);
+    assert(r.ui == SLAB_UI_PUTTS_INPUT && r.holes[0].strokes == 4);
+    assert(r.holes[0].captured == SLAB_CAPTURE_STROKES);
     slab_apply_event(&r, SLAB_EVT_MINUS);
-    assert(!r.holes[0].captured && !r.holes[0].strokes);
+    assert(r.holes[0].putts == 0 && r.holes[0].captured == (SLAB_CAPTURE_STROKES | SLAB_CAPTURE_PUTTS));
+    slab_apply_event(&r, SLAB_EVT_NEXT);
+    assert(r.ui == SLAB_UI_END_HOLE_CONFIRM && r.drive_sel == SLAB_FWY_H);
+    slab_apply_event(&r, SLAB_EVT_NEXT);
+    assert(r.current_hole == 2 && r.holes[0].locked && r.holes[0].fairway == SLAB_FWY_H);
+    assert(r.holes[1].captured == 0);
     slab_apply_event(&r, SLAB_EVT_PLUS);
-    slab_apply_event(&r, SLAB_EVT_NEXT);
-    slab_apply_event(&r, SLAB_EVT_NEXT);
-    assert(r.ui == SLAB_UI_PUTTS_INPUT && r.holes[0].captured == 1);
+    assert(r.ui == SLAB_UI_STROKE_EDIT && r.holes[1].strokes == 5);
     slab_apply_event(&r, SLAB_EVT_MINUS);
-    assert(r.holes[0].putts == 0 && r.holes[0].captured == 3);
-    slab_apply_event(&r, SLAB_EVT_NEXT);
-    assert(r.drive_sel == SLAB_FWY_NA);
-    slab_apply_event(&r, SLAB_EVT_NEXT);
-    assert(r.holes[0].fairway == SLAB_FWY_NA && r.holes[0].captured == 3);
-    assert(slab_round_gir_holes(&r) == 1 && slab_round_fwy_holes(&r) == 0);
-    assert(r.current_hole == 2 && r.holes[1].captured == 0);
-    /* Lowering strokes invalidates previously entered incompatible putts. */
-    for (int i = 0; i < 3; i++) slab_apply_event(&r, SLAB_EVT_PLUS);
+    slab_apply_event(&r, SLAB_EVT_MINUS);
+    assert(r.holes[1].strokes == 3);
     slab_apply_event(&r, SLAB_EVT_NEXT);
     for (int i = 0; i < 3; i++) slab_apply_event(&r, SLAB_EVT_PLUS);
+    assert(r.holes[1].putts == 3);
     slab_apply_event(&r, SLAB_EVT_BACK);
     slab_apply_event(&r, SLAB_EVT_MINUS);
-    assert(r.holes[1].strokes == 2 && r.holes[1].putts == 0 && r.holes[1].captured == 1);
+    assert(r.holes[1].strokes == 2 && r.holes[1].putts == 0 && r.holes[1].captured == SLAB_CAPTURE_STROKES);
+
+    /* Unknown par still cannot be accepted by NEXT alone. */
+    slab_round_t unknown;
+    assert(!slab_round_start(&unknown, "test", 2, 9, NULL));
+    for (int i = 0; i < 5; i++) slab_apply_event(&unknown, SLAB_EVT_NEXT);
+    assert(unknown.current_hole == 1 && unknown.holes[0].captured == 0 && unknown.holes[0].strokes == 0);
+    slab_apply_event(&unknown, SLAB_EVT_MINUS);
+    assert(!unknown.holes[0].captured && !unknown.holes[0].strokes);
 }
 static void test_queue(void)
 {
@@ -119,6 +126,33 @@ static void test_buffers(void)
     r.holes_played = 255;
     assert(!slab_ble_build_payload(&r, full, sizeof(full)));
 }
+static void test_seed_and_ack_meta(void)
+{
+    slab_store_t store;
+    slab_store_init(&store);
+    assert(!slab_store_seed_demo(&store, "slab-test"));
+    assert(store.count == 1 && !store.active_present);
+    assert(slab_round_complete(&store.queued[0]));
+    assert(slab_ble_should_advertise(&store.queued[0]));
+    assert(!strcmp(store.queued[0].course_name, "DEMO"));
+    assert(!strcmp(store.queued[0].tees, "PAR72"));
+    int par = 0;
+    for (int i = 0; i < 18; i++) par += slab_demo_pars()[i];
+    assert(par == 72);
+    char payload[SLAB_PAYLOAD_SIZE], meta[320];
+    int n = slab_ble_build_payload(&store.queued[0], payload, sizeof(payload));
+    assert(n > 200 && strstr(payload, "\"schema_version\":2"));
+    assert(strstr(payload, "\"drive_result\":\"fairway\""));
+    assert(!strstr(payload, "ghin") && !strstr(payload, "GHIN"));
+    int m = slab_ble_build_meta(&store.queued[0], n, SLAB_BLE_PAGE_LEN, 1, meta, sizeof(meta));
+    assert(m > 40 && m < (int)sizeof(meta));
+    char device[SLAB_DEVICE_ID_SIZE], id[SLAB_ROUND_ID_SIZE], sum[15];
+    uint32_t sequence = 0;
+    assert(slab_ble_parse_ack(meta, device, sizeof(device), id, sizeof(id), &sequence, sum));
+    assert(!slab_store_ack(&store, device, id, sequence, sum));
+    assert(store.count == 0);
+    assert(!slab_ble_parse_ack("{\"schema_version\":1}", device, sizeof(device), id, sizeof(id), &sequence, sum));
+}
 static void test_long_press(void)
 {
     slab_input_t in; slab_input_init(&in);
@@ -158,7 +192,7 @@ static void fixtures(const char *dir)
 }
 int main(int argc, char **argv)
 {
-    test_capture(); test_queue(); test_turn_and_ids(); test_buffers(); test_long_press();
+    test_capture(); test_queue(); test_turn_and_ids(); test_buffers(); test_seed_and_ack_meta(); test_long_press();
     if (argc == 2) fixtures(argv[1]);
     puts("round v2: capture, zero putts, queue, replay, identities, bounds, turn and long-press tests passed");
     return 0;

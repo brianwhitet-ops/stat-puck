@@ -42,7 +42,8 @@ typedef enum {
     SLAB_EVT_NEXT,
     SLAB_EVT_BACK,
     SLAB_EVT_MODE,
-    SLAB_EVT_LONG_NEXT
+    SLAB_EVT_LONG_NEXT,
+    SLAB_EVT_LONG_MODE /* hold MODE ~2s: deep sleep; not a score change */
 } slab_evt_t;
 
 typedef enum {
