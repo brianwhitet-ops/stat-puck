@@ -58,44 +58,113 @@ static void test_drive_par4_par5(void)
     slab_round_t r;
     slab_round_init_fixture_hole7(&r);
 
-    /* Hole 7 = par 4. */
+    /* Hole 7 = par 4. Fairway is the default; + left, − right, opposite returns. */
     EXPECT(r.holes[6].par == 4, "hole 7 par 4");
     enter_confirm(&r, 7);
     EXPECT(r.ui == SLAB_UI_END_HOLE_CONFIRM, "par4 confirm");
-    r.holes[6].fairway = SLAB_FWY_NA;
-    r.holes[6].captured = 3;
-    r.drive_sel = SLAB_FWY_NA;
-    EXPECT(r.drive_sel == SLAB_FWY_NA, "par4 drive starts unset");
+    EXPECT(r.drive_sel == SLAB_FWY_H, "par4 defaults fairway");
     slab_apply_event(&r, SLAB_EVT_PLUS);
-    EXPECT(r.drive_sel == SLAB_FWY_L, "par4 first + -> L");
-    slab_apply_event(&r, SLAB_EVT_PLUS);
-    EXPECT(r.drive_sel == SLAB_FWY_H, "par4 + -> H");
-    slab_apply_event(&r, SLAB_EVT_PLUS);
-    EXPECT(r.drive_sel == SLAB_FWY_R, "par4 + -> R");
+    EXPECT(r.drive_sel == SLAB_FWY_L, "+ from fairway -> left");
     slab_apply_event(&r, SLAB_EVT_MINUS);
-    EXPECT(r.drive_sel == SLAB_FWY_H, "par4 - -> H");
-    slab_apply_event(&r, SLAB_EVT_MODE);
-    EXPECT(r.drive_sel == SLAB_FWY_R, "par4 MODE cycles drive");
+    EXPECT(r.drive_sel == SLAB_FWY_H, "- returns to fairway");
+    slab_apply_event(&r, SLAB_EVT_MINUS);
+    EXPECT(r.drive_sel == SLAB_FWY_R, "- from fairway -> right");
+    slab_apply_event(&r, SLAB_EVT_PLUS);
+    EXPECT(r.drive_sel == SLAB_FWY_H, "+ returns to fairway");
+    slab_apply_event(&r, SLAB_EVT_PLUS);
+    EXPECT(r.drive_sel == SLAB_FWY_L, "+ left again");
+    slab_apply_event(&r, SLAB_EVT_PLUS);
+    EXPECT(r.drive_sel == SLAB_FWY_L, "+ stays left");
     slab_apply_event(&r, SLAB_EVT_NEXT);
     EXPECT(r.holes[6].locked, "par4 locked");
-    EXPECT(r.holes[6].fairway == SLAB_FWY_R, "par4 stored entered drive");
+    EXPECT(r.holes[6].fairway == SLAB_FWY_L, "par4 stored left");
     EXPECT(r.ui == SLAB_UI_DEFAULT_HOLE, "advance after par4");
     EXPECT(!slab_ble_should_advertise(&r), "no BLE mid-round after par4");
 
-    /* Hole 4 = par 5. */
+    /* Hole 4 = par 5, no drive captured yet. */
     slab_round_init_fixture_hole7(&r);
     EXPECT(r.holes[3].par == 5, "hole 4 par 5");
-    enter_confirm(&r, 4);
+    r.current_hole = 4;
+    r.holes[3].strokes = 5;
+    r.holes[3].putts = 2;
+    r.holes[3].captured = 3;
+    r.holes[3].fairway = SLAB_FWY_NA;
+    r.drive_sel = SLAB_FWY_NA;
+    r.ui = SLAB_UI_PUTTS_INPUT;
+    slab_apply_event(&r, SLAB_EVT_NEXT);
     EXPECT(r.ui == SLAB_UI_END_HOLE_CONFIRM, "par5 confirm");
-    EXPECT(r.drive_sel == SLAB_FWY_NA, "par5 starts unset");
-    slab_apply_event(&r, SLAB_EVT_MINUS);
-    EXPECT(r.drive_sel == SLAB_FWY_R, "par5 first - -> R");
-    slab_apply_event(&r, SLAB_EVT_MINUS);
-    EXPECT(r.drive_sel == SLAB_FWY_H, "par5 - -> H");
+    EXPECT(r.drive_sel == SLAB_FWY_H, "par5 defaults fairway");
     slab_apply_event(&r, SLAB_EVT_NEXT);
     EXPECT(r.holes[3].locked, "par5 locked");
-    EXPECT(r.holes[3].fairway == SLAB_FWY_H, "par5 stored H");
+    EXPECT(r.holes[3].fairway == SLAB_FWY_H, "par5 stored fairway");
+    EXPECT(r.holes[3].captured & SLAB_CAPTURE_DRIVE, "par5 drive captured");
     EXPECT(r.ui == SLAB_UI_DEFAULT_HOLE, "advance after par5");
+}
+
+static void test_reopen_only_previous(void)
+{
+    slab_round_t r;
+    uint8_t pars[18];
+    memset(pars, 4, sizeof(pars));
+    EXPECT(!slab_round_start(&r, "reopen", 1, 18, pars), "start");
+    slab_apply_event(&r, SLAB_EVT_NEXT);
+    slab_apply_event(&r, SLAB_EVT_MINUS);
+    slab_apply_event(&r, SLAB_EVT_NEXT);
+    slab_apply_event(&r, SLAB_EVT_NEXT);
+    EXPECT(r.current_hole == 2 && r.holes[0].locked && r.ui == SLAB_UI_DEFAULT_HOLE, "on next hole");
+    EXPECT(r.holes[1].captured == 0, "next hole untouched");
+    slab_apply_event(&r, SLAB_EVT_BACK);
+    EXPECT(r.current_hole == 1 && !r.holes[0].locked, "reopened previous");
+    slab_apply_event(&r, SLAB_EVT_BACK);
+    EXPECT(r.current_hole == 1, "cannot skip back further");
+    slab_apply_event(&r, SLAB_EVT_NEXT);
+    slab_apply_event(&r, SLAB_EVT_NEXT);
+    slab_apply_event(&r, SLAB_EVT_NEXT);
+    slab_apply_event(&r, SLAB_EVT_NEXT);
+    EXPECT(r.current_hole == 2 && r.holes[0].locked, "relocked");
+    slab_apply_event(&r, SLAB_EVT_PLUS);
+    EXPECT(r.current_hole == 2 && (r.holes[1].captured & SLAB_CAPTURE_STROKES), "hole 2 touched");
+    slab_apply_event(&r, SLAB_EVT_BACK);
+    slab_apply_event(&r, SLAB_EVT_BACK);
+    EXPECT(r.current_hole == 2 && r.holes[0].locked, "touched hole does not reopen");
+}
+
+static void test_mode_hold(void)
+{
+    slab_input_t in;
+    slab_input_init(&in);
+    uint8_t raw[SLAB_BTN_COUNT] = {0};
+    raw[SLAB_BTN_MODE] = 1;
+    int longs = 0, backs = 0;
+    for (int i = 0; i < 20; i++) {
+        slab_evt_t ev = slab_input_poll(&in, raw, 10, 0, 0);
+        longs += ev == SLAB_EVT_LONG_MODE;
+        backs += ev == SLAB_EVT_BACK;
+    }
+    raw[SLAB_BTN_MODE] = 0;
+    for (int i = 0; i < 5; i++) {
+        slab_evt_t ev = slab_input_poll(&in, raw, 10, 0, 0);
+        backs += ev == SLAB_EVT_BACK;
+        longs += ev == SLAB_EVT_LONG_MODE;
+    }
+    EXPECT(longs == 0 && backs == 1, "short MODE is back");
+
+    slab_input_init(&in);
+    raw[SLAB_BTN_MODE] = 1;
+    longs = 0;
+    backs = 0;
+    for (int i = 0; i < 250; i++) {
+        slab_evt_t ev = slab_input_poll(&in, raw, 10, 0, 0);
+        longs += ev == SLAB_EVT_LONG_MODE;
+        backs += ev == SLAB_EVT_BACK;
+    }
+    raw[SLAB_BTN_MODE] = 0;
+    for (int i = 0; i < 5; i++) {
+        slab_evt_t ev = slab_input_poll(&in, raw, 10, 0, 0);
+        backs += ev == SLAB_EVT_BACK;
+        longs += ev == SLAB_EVT_LONG_MODE;
+    }
+    EXPECT(longs == 1 && backs == 0, "hold MODE is sleep, not back");
 }
 
 static void test_par3_no_drive(void)
@@ -225,6 +294,8 @@ int main(void)
 {
     test_sequence_lock();
     test_drive_par4_par5();
+    test_reopen_only_previous();
+    test_mode_hold();
     test_par3_no_drive();
     test_gir_derived_only();
     test_ble_gate();

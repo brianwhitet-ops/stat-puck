@@ -16,6 +16,10 @@ bool slab_round_complete(const slab_round_t *r);
 bool slab_round_finish_nine(slab_round_t *r);
 void slab_round_init_fixture_hole7(slab_round_t *r);
 void slab_round_init_fixture_complete(slab_round_t *r);
+/* Built-in par-72 card (front nine sums to 36). Not a new course brand. */
+const uint8_t *slab_demo_pars(void);
+/* Completed 18-hole demo using those pars. 0 on success. */
+int slab_round_load_demo_complete(slab_round_t *r, const char *device_id, uint32_t sequence);
 
 void slab_hole_apply_defaults(slab_hole_t *h);
 bool slab_hole_gir(const slab_hole_t *h);

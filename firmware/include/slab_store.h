@@ -17,6 +17,8 @@ enum { SLAB_STORE_OK = 0, SLAB_STORE_FULL = -1, SLAB_STORE_INVALID = -2,
 void slab_store_init(slab_store_t *store);
 bool slab_store_valid(const slab_store_t *store);
 int slab_store_begin(slab_store_t *store, const char *device, uint8_t holes, const uint8_t *pars);
+/* Append one completed demo round. Refused while a round is active or the queue is full. */
+int slab_store_seed_demo(slab_store_t *store, const char *device);
 int slab_store_finish(slab_store_t *store);
 /* Mutates a candidate snapshot only. Publish it only after persistence succeeds. */
 int slab_store_ack(slab_store_t *store, const char *device, const char *round_id,

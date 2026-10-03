@@ -1,47 +1,48 @@
-# Firmware pin map (P1 breadboard → XIAO nRF52840)
+# Firmware pin map (current bench → XIAO nRF52840)
 
-Based on Seeed XIAO nRF52840 + Waveshare 2.9" e-Paper module datasheet pinout.
+Seeed XIAO nRF52840 (plain, not Sense) + Waveshare 2.9" e-Paper module.
 
 ## E-ink (4-wire SPI)
+
+Stock library only: **GxEPD2_290_T94_V2**. No custom SSD1680 driver.
 
 | Module | XIAO | Notes |
 | --- | --- | --- |
 | VCC | 3V3 | 3.3 V |
 | GND | GND | |
 | DIN | D10 (MOSI) | SPI MOSI |
-| SCLK | D8 (SCK) | SPI SCK |
+| CLK | D8 (SCK) | SPI SCK |
 | CS | D7 | low active |
-| DC | D6 | high=data, low=cmd |
-| RST | D3 | low active |
-| BUSY | D1 | **high = busy** on Waveshare module |
+| DC | D5 | high=data, low=cmd |
+| RST | D4 | low active |
+| BUSY | D3 | **high = busy** on the Waveshare module |
 
-Partial refresh for stroke/putt value edits; full refresh on state change / NEXT / confirm. BLE advertise only in `ROUND_COMPLETE_SYNC`.
+MISO is not wired to the panel. The SPI peripheral's MISO pin is D1 so it does not take NEXT (D9).
 
-Controller lock: **SSD1680** via **GxEPD2_290_T94_V2** (Waveshare 2.9" B/W V2/V3). See `firmware/README.md`.
+Partial refresh for stroke/putt value edits; full refresh on state change / NEXT / confirm. BLE advertises only on the sync screen.
 
-## Buttons (Omron B3W-1000 → GND, INPUT_PULLUP)
-
-Sequential lock: strokes → putts → done. No GIR pad.
+## Buttons (to GND, INPUT_PULLUP)
 
 | Button | GPIO | Behavior |
 | --- | --- | --- |
-| + | D2 | increment active field (enters `STROKE_EDIT` from default) |
-| − | D4 | decrement (min strokes 1) |
-| PUTT | D5 | wired, **ignored** (cannot skip to putts) |
-| MODE | D0 | back one step; cycle drive L/FWY/R on confirm (par 4/5); toggle stats after 18 |
-| NEXT | D9 | advance: default→stroke→putts→confirm→next hole / sync |
+| MODE | D0 | short: back one step, or reopen only the hole just finished; hold ~2s: deep sleep. MODE wakes. |
+| + | D2 | strokes up from par; on the drive screen, Left (or back to Fairway from Right) |
+| − | D6 | strokes down from par; on the drive screen, Right (or back to Fairway from Left) |
+| NEXT | D9 | advance. On the sync screen, hold NEXT for a new round |
 
-Software debounce **25 ms** (datasheet bounce ≤5 ms). Optional dial (unpopulated) shares the +/− path.
+PUTT is not part of this UX and is not read. Strokes on the demo card open at par. Drive on par 4/5 opens on Fairway.
+
+Software debounce **25 ms**. MODE hold **2 s**. NEXT long-press **600 ms**.
 
 ## Persistence
 
-On-device LittleFS `/slab_round.bin` (18-hole card + UI). Host bench uses `firmware/testdata/nvram.bin`.
+LittleFS journal `/slab_store.0` and `/slab_store.1`. An empty queue is filled with one completed demo round on boot. See `firmware/BLE_SYNC.md`.
 
 ## Power
 
-- JST LiPo on XIAO charge pad / battery pads per Seeed wiki
-- USB-C for charge + UF2 flash
-- Sleep between IRQs; power down panel between refreshes
+- USB-C for charge and UF2 flash
+- Hold MODE about 2 seconds to enter System OFF. Press MODE to wake (the chip resets)
+- The panel is hibernated before sleep
 
 ## Out of scope
 

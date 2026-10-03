@@ -9,6 +9,10 @@
 #include <GxEPD2_BW.h>
 #include <Adafruit_LittleFS.h>
 #include <InternalFileSystem.h>
+#include <nrf_gpio.h>
+#include <nrf_soc.h>
+#include <string.h>
+#include <stdio.h>
 
 extern "C" {
 #include "slab_state.h"
@@ -20,12 +24,14 @@ extern "C" {
 #include "slab_board.h"
 #include "slab_font.h"
 #include "slab_store.h"
+#include "slab_radio.h"
 }
 
 using Adafruit_LittleFS_Namespace::File;
 using Adafruit_LittleFS_Namespace::FILE_O_READ;
 using Adafruit_LittleFS_Namespace::FILE_O_WRITE;
 
+/* Stock GxEPD2 driver. Do not replace this with a custom SSD1680 class. */
 static GxEPD2_BW<GxEPD2_290_T94_V2, GxEPD2_290_T94_V2::HEIGHT> display(
     GxEPD2_290_T94_V2(SLAB_PIN_EPD_CS, SLAB_PIN_EPD_DC, SLAB_PIN_EPD_RST,
                       SLAB_PIN_EPD_BUSY));
@@ -36,12 +42,16 @@ static slab_fb_t g_fb;
 static slab_round_t g_round;
 static slab_input_t g_input;
 static slab_epd_t g_epd;
-static bool g_advertising;
 static bool g_start_screen = true;
 static bool g_storage_error;
+static bool g_mode_sleep_armed;
 static uint8_t g_selected_holes = 18;
 static char g_device_id[SLAB_DEVICE_ID_SIZE];
+static char g_serial_line[32];
+static uint8_t g_serial_len;
 static const char *kSlotPaths[] = {"/slab_store.0", "/slab_store.1"};
+
+extern "C" const uint32_t g_ADigitalPinMap[];
 
 extern "C" int slab_persist_slot_write(unsigned slot, const void *data, unsigned len)
 {
@@ -94,21 +104,23 @@ static void ble_gate_apply(void)
 {
     bool want = !g_storage_error && !g_start_screen && !g_store.active_present &&
         g_store.count && slab_ble_should_advertise(&g_round);
-    if (want == g_advertising) {
-        return;
+    /* Serve the oldest queued round, which is the preloaded demo on a fresh boot. */
+    if (want && g_store.count && g_round.round_sequence != g_store.queued[0].round_sequence) {
+        want = slab_ble_should_advertise(&g_store.queued[0]);
     }
-    g_advertising = want;
-    /*
-     * Stub: Bluefruit advertising is started only here.
-     * Mid-round states must never reach startAdvertising().
-     */
-    Serial.print("BLE advertise ");
-    Serial.println(want ? "ON (ROUND_COMPLETE_SYNC)" : "OFF");
+    slab_radio_apply(&g_store, want);
 }
 
 static const uint8_t kBtnPins[SLAB_BTN_COUNT] = {
     SLAB_PIN_BTN_PLUS, SLAB_PIN_BTN_MINUS, SLAB_PIN_BTN_PUTT, SLAB_PIN_BTN_MODE,
     SLAB_PIN_BTN_NEXT};
+
+static uint8_t btn_down(int i)
+{
+    uint8_t pin = kBtnPins[i];
+    if (pin == 0xFF) return 0;
+    return digitalRead(pin) == LOW ? 1 : 0;
+}
 
 static void render_screen()
 {
@@ -120,8 +132,8 @@ static void render_screen()
             slab_text_s(&fb, 12, 44, "NO DATA ERASED", 1);
             slab_text_s(&fb, 12, 65, "RESTART / SERVICE", 1);
         } else {
-            char line[32];
-            snprintf(line, sizeof(line), "%u HOLES", g_selected_holes);
+            char line[40];
+            snprintf(line, sizeof(line), "%u HOLES  DEMO PAR 72", g_selected_holes);
             slab_text_m(&fb, 12, 42, line, 1);
             slab_text_s(&fb, 12, 68, "+/- 9 OR 18 / NEXT START", 1);
             snprintf(line, sizeof(line), "%u SAVED / MODE TO VIEW", g_store.count);
@@ -131,7 +143,7 @@ static void render_screen()
         slab_ui_render(&fb, &g_round);
         if (!g_store.active_present && g_round.ui == SLAB_UI_ROUND_COMPLETE_SYNC) {
             slab_fb_fill_rect(&fb, 6, 111, 284, 16, 0);
-            slab_text_s(&fb, 8, 113, "SAVED / HOLD NEXT FOR NEW ROUND", 1);
+            slab_text_s(&fb, 8, 113, "BLE SLAB / HOLD NEXT NEW", 1);
         }
     }
     push_fb(&fb, SLAB_REFRESH_FULL);
@@ -149,12 +161,100 @@ static bool commit_store(const slab_store_t &candidate)
     return true;
 }
 
+static void power_off(void)
+{
+    Serial.println("power off; MODE wakes");
+    Serial.flush();
+    display.hibernate();
+    slab_radio_sleep();
+    pinMode(SLAB_PIN_BTN_MODE, INPUT_PULLUP);
+    nrf_gpio_cfg_sense_input(g_ADigitalPinMap[SLAB_PIN_BTN_MODE], NRF_GPIO_PIN_PULLUP,
+                             NRF_GPIO_PIN_SENSE_LOW);
+    (void)sd_power_system_off();
+    while (1) delay(1000);
+}
+
+static void seed_demo(void)
+{
+    if (g_storage_error) {
+        Serial.println("seed refused: storage error");
+        return;
+    }
+    if (g_store.active_present) {
+        Serial.println("seed refused: round in progress");
+        return;
+    }
+    g_candidate = g_store;
+    if (slab_store_seed_demo(&g_candidate, g_device_id) != 0) {
+        Serial.println("seed refused: queue full or invalid");
+        return;
+    }
+    if (!commit_store(g_candidate)) {
+        Serial.println("seed persist failed");
+        return;
+    }
+    g_round = g_store.queued[0];
+    g_start_screen = false;
+    Serial.print("seeded ");
+    Serial.println(g_store.queued[g_store.count - 1].round_id);
+    render_screen();
+}
+
+static void service_serial(void)
+{
+    while (Serial.available()) {
+        char c = (char)Serial.read();
+        if (c == '\n' || c == '\r') {
+            g_serial_line[g_serial_len] = 0;
+            if (!strcmp(g_serial_line, "seed")) seed_demo();
+            else if (g_serial_line[0]) Serial.println("commands: seed");
+            g_serial_len = 0;
+        } else if ((size_t)g_serial_len + 1 < sizeof(g_serial_line)) {
+            g_serial_line[g_serial_len++] = c;
+        }
+    }
+}
+
+static void service_ack(void)
+{
+    g_candidate = g_store;
+    int rc = slab_radio_consume_ack(&g_candidate);
+    if (rc == 1) return;
+    if (rc == 0) {
+        if (!commit_store(g_candidate)) {
+            slab_radio_set_status("persist_error");
+            Serial.println("ACK persist_error");
+            return;
+        }
+        slab_radio_set_status("ok");
+        if (g_store.count) {
+            g_round = g_store.queued[0];
+            g_start_screen = false;
+        } else {
+            g_start_screen = true;
+        }
+        Serial.println("ACK ok");
+        render_screen();
+        return;
+    }
+    const char *status = "invalid";
+    if (rc == SLAB_STORE_CONFLICT) status = "conflict";
+    else if (rc == SLAB_STORE_NOT_FOUND) status = "not_found";
+    slab_radio_set_status(status);
+    Serial.print("ACK ");
+    Serial.println(status);
+}
+
 void setup()
 {
     Serial.begin(115200);
     snprintf(g_device_id, sizeof(g_device_id), "slab-%08lx%08lx",
              (unsigned long)NRF_FICR->DEVICEID[1], (unsigned long)NRF_FICR->DEVICEID[0]);
-    for (int i = 0; i < SLAB_BTN_COUNT; i++) pinMode(kBtnPins[i], INPUT_PULLUP);
+    for (int i = 0; i < SLAB_BTN_COUNT; i++) {
+        if (kBtnPins[i] != 0xFF) pinMode(kBtnPins[i], INPUT_PULLUP);
+    }
+    SPI.setPins(SLAB_PIN_EPD_SCK, SLAB_PIN_EPD_DIN, SLAB_PIN_EPD_MISO);
+    slab_radio_init();
     // InternalFileSystem::begin auto-formats on mount failure. Use the base
     // mount-only operation so a damaged filesystem is never silently erased.
     // Fresh devices must be formatted by the factory/service provisioning step.
@@ -166,31 +266,54 @@ void setup()
     int status = fs_ok ? slab_persist_load_store(&g_store) : SLAB_PERSIST_ERROR;
     if (status == SLAB_PERSIST_EMPTY) {
         slab_store_init(&g_store);
-        g_storage_error = slab_persist_save_store(&g_store) != 0;
-    } else g_storage_error = status != 0;
+        status = SLAB_PERSIST_OK;
+    }
+    g_storage_error = status != SLAB_PERSIST_OK;
+    if (!g_storage_error && !g_store.active_present && g_store.count == 0) {
+        g_candidate = g_store;
+        if (slab_store_seed_demo(&g_candidate, g_device_id) != 0 || !commit_store(g_candidate)) {
+            g_storage_error = true;
+        }
+    }
     if (!g_storage_error && g_store.active_present) {
         g_round = g_store.active;
         g_start_screen = false;
     } else if (!g_storage_error && g_store.count) {
-        g_round = g_store.queued[g_store.count - 1];
+        g_round = g_store.queued[0];
         g_start_screen = false;
     }
     render_screen();
+    Serial.println("Slab BLE name=Slab env=xiaoble board=xiaoble_adafruit");
+    if (!g_storage_error && g_store.count) {
+        Serial.print("oldest round ");
+        Serial.println(g_store.queued[0].round_id);
+    }
+    Serial.println("serial command: seed");
 }
 
 void loop()
 {
-    if (g_storage_error) { delay(10); return; }
+    service_serial();
+    service_ack();
     uint8_t raw[SLAB_BTN_COUNT];
-    for (int i = 0; i < SLAB_BTN_COUNT; i++) raw[i] = digitalRead(kBtnPins[i]) == LOW ? 1 : 0;
+    for (int i = 0; i < SLAB_BTN_COUNT; i++) raw[i] = btn_down(i);
+    if (!raw[SLAB_BTN_MODE]) g_mode_sleep_armed = true;
     slab_evt_t ev = slab_input_poll(&g_input, raw, 10, 0, 0);
-    if (ev == SLAB_EVT_NONE) { delay(10); return; }
+    if (ev == SLAB_EVT_LONG_MODE && g_mode_sleep_armed) power_off();
+    if (g_storage_error || ev == SLAB_EVT_NONE || ev == SLAB_EVT_LONG_MODE) {
+        delay(10);
+        return;
+    }
     if (g_start_screen) {
         if (ev == SLAB_EVT_PLUS || ev == SLAB_EVT_MINUS) g_selected_holes = g_selected_holes == 9 ? 18 : 9;
         else if (ev == SLAB_EVT_NEXT) {
             g_candidate = g_store;
             slab_store_t &candidate = g_candidate;
-            int result = slab_store_begin(&candidate, g_device_id, g_selected_holes, NULL);
+            int result = slab_store_begin(&candidate, g_device_id, g_selected_holes, slab_demo_pars());
+            if (result == 0) {
+                memcpy(candidate.active.course_name, "DEMO", 5);
+                memcpy(candidate.active.tees, "PAR72", 6);
+            }
             if (result == SLAB_STORE_FULL) {
                 g_round = g_store.queued[0];
                 g_start_screen = false;
@@ -201,7 +324,7 @@ void loop()
                 g_start_screen = false;
             }
         } else if (ev == SLAB_EVT_BACK && g_store.count) {
-            g_round = g_store.queued[g_store.count - 1];
+            g_round = g_store.queued[0];
             g_start_screen = false;
         }
         render_screen();

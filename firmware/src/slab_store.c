@@ -33,6 +33,19 @@ int slab_store_begin(slab_store_t *s, const char *device, uint8_t holes, const u
     s->next_sequence++;
     return 0;
 }
+int slab_store_seed_demo(slab_store_t *s, const char *device)
+{
+    if (!s || !device || !slab_store_valid(s) || s->active_present || s->count == SLAB_QUEUE_CAPACITY) {
+        return SLAB_STORE_INVALID;
+    }
+    if (s->next_sequence == UINT32_MAX) return SLAB_STORE_INVALID;
+    if (s->count && strcmp(device, s->queued[0].device_id)) return SLAB_STORE_INVALID;
+    slab_round_t round;
+    if (slab_round_load_demo_complete(&round, device, s->next_sequence)) return SLAB_STORE_INVALID;
+    s->queued[s->count++] = round;
+    s->next_sequence++;
+    return SLAB_STORE_OK;
+}
 int slab_store_finish(slab_store_t *s)
 {
     if (!slab_store_valid(s) || !s->active_present || !slab_round_complete(&s->active)) return SLAB_STORE_INVALID;

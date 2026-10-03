@@ -1,5 +1,9 @@
 # Sync payload (phone ← device)
 
+The firmware on the wire is **protocol v2** (`protocol/README.md`), not the v1 sketch below. Read `firmware/BLE_SYNC.md` for the GATT layout and the preloaded round. This page is an older draft and is not what nRF Connect will read.
+
+# Sync payload draft (v1, not implemented)
+
 Device does **not** talk to GHIN. After the round (or at the turn), phone pulls this payload over BLE and may later post via a partner integration.
 
 ```json

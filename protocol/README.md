@@ -4,7 +4,7 @@ Implementation proposal for review, 2026-09-18. This supersedes the two incompat
 
 ## Implementation boundary
 
-The C encoder, queue/chunk reader, TypeScript decoder, receiver and durable import coordinator are implemented and software-tested. The XIAO radio remains a stub. There is no working GATT service, native iOS/Android BLE bridge, course-card receiver or DFU implementation in this change. Do not demonstrate an app simulation as a working wireless device.
+The C encoder, queue/chunk reader, TypeScript decoder, receiver and durable import coordinator are implemented and software-tested. The XIAO image now advertises as **Slab** and serves the oldest queued round over GATT while the sync screen is up. That bench layout, the preloaded round, and the nRF Connect steps are in `firmware/BLE_SYNC.md`. There is still no native iOS/Android BLE bridge, course-card receiver, or DFU implementation. Do not demonstrate an app simulation as a working wireless device.
 
 The app and firmware PRs both carry the same `protocol/` directory. Before combining them, verify those files are identical. The app re-exports the shared TypeScript types; it does not maintain a third schema.
 
@@ -61,6 +61,8 @@ Snapshots currently persist the versioned C structure layout. They are not a cro
 These APIs use fixed workspaces and are serialized main-task APIs, not reentrant or ISR-safe. The device bridge must synchronize reads, saves, completion and ACK processing. The host file adapter is test infrastructure, not a certified database. A/B files share the underlying LittleFS medium; software fault tests do not establish real flash/brownout robustness, endurance, or the 30-day retention target.
 
 ## User interactions introduced for review
+
+On-device play in the current XIAO image follows `firmware/README.md` when these notes disagree: strokes start at par on the built-in par-72 card, fairway is the drive default, and hold MODE sleeps. The bytes below stay the wire contract. Unknown par still cannot be implied.
 
 - Quick Start selects 9 or 18 holes with +/- and starts with NEXT. Unknown par/yardage remains unknown.
 - Strokes begin at zero and require +/- entry. NEXT cannot promote an untouched zero into a score.
