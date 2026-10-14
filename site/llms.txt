@@ -1,0 +1,17 @@
+# Slab
+
+> Slab is a cart-native golf scoring object. Keep your head in the shot. Review the round when it can actually teach you something. Concept in development.
+
+Product site for Slab, a Stats Lab concept. One page at https://playslabgolf.com/. Concept 01 is a study, not a shipping unit. Not for sale. No price, no preorder, no ship date.
+
+## Sections
+
+- [Home](https://playslabgolf.com/): Phone stays in the bag. Score lives on the cart.
+- [Play](https://playslabgolf.com/#problem): Scoring on a phone fights the round. Slab is meant to stay on the cart.
+- [Product](https://playslabgolf.com/#product): Concept 01. Two pads, one dial, and six face studies: default hole, stroke edit, putts, end-hole confirm, round complete, derived stats.
+- [Review](https://playslabgolf.com/#review): After the round. The greens, putting, and score figures are a specimen from the screen study, not a played round.
+- [Interest list](https://playslabgolf.com/#waitlist): Email when a first batch is real. No payment and no reservation.
+
+## Images
+
+- [Concept 01 hero](https://playslabgolf.com/assets/hero.png): Light matte rounded scoring slab with a glanceable face, two pads, and a center dial.
